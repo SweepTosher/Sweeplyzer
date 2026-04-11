@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sweeplyzer</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+:root{--bg:#0a0012;--surface:#1a1420;--text:#fff;--muted:#aaa;--accent:#45c2e5}
+*{transition:background .2s,border-color .2s,box-shadow .2s,color .2s}
+html,body{margin:0;padding:0;width:100%;min-height:100vh}
+body{background:var(--bg);color:var(--text);font-family:Inter,'Segoe UI',system-ui,-apple-system,sans-serif}
+h1{font-size:1.5rem;font-weight:900;color:var(--accent)}
+.search{background:var(--surface);border:2px solid rgba(255,255,255,.1);border-radius:8px;padding:.6rem 1rem;color:var(--text);font-size:.95rem;width:100%;margin-bottom:1rem}
+.search:focus{outline:none;border-color:var(--accent)}
+.card{background:var(--surface);border:2px solid rgba(255,255,255,.1);border-radius:10px;padding:.75rem;cursor:pointer}
+.card:hover{border-color:var(--accent);box-shadow:0 0 20px rgba(69,194,229,.3)}
+.card.selected{border-color:#22c55e}
+.card.greyed{opacity:.4;pointer-events:none}
+.card img{width:100%;aspect-ratio:1;object-fit:contain;background:#000;border-radius:8px}
+.card-title{font-size:.9rem;margin-top:.5rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;color:var(--accent)}
+.card-type{font-size:.7rem;color:var(--muted);text-transform:uppercase;margin-top:.15rem}
+.card-stats{display:flex;gap:.4rem;margin-top:.4rem}
+.pill{font-size:.8rem;padding:.2rem .5rem;border-radius:4px;font-weight:700}
+.pill.race{color:#f59e0b}
+.pill.fan{color:#ec4899}
+.sidebar{background:var(--surface);border:2px solid var(--accent);border-radius:12px;padding:1rem}
+.sidebar h2{font-size:1rem;font-weight:800;color:var(--accent);margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:2px solid rgba(255,255,255,.1)}
+.deck-card{display:flex;gap:.75rem;padding:.6rem;background:rgba(0,0,0,.3);border-radius:6px;margin-bottom:.5rem;align-items:center}
+.deck-card img{width:2.5rem;height:2.5rem;object-fit:contain;background:#000;border-radius:4px}
+.deck-card-info{flex:1;min-width:0}
+.deck-card-name{font-size:.85rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--accent)}
+.deck-card-stats{font-size:.8rem;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:.3rem}
+.deck-card-stats .lb{color:var(--accent)}
+.deck-card-stats .race{color:#f59e0b;font-weight:700}
+.deck-card-stats .fan{color:#ec4899;font-weight:700}
+.lb-selector{display:flex;gap:.25rem;margin-top:.3rem}
+.lb-btn{background:transparent;border:1px solid rgba(255,255,255,.2);color:var(--muted);padding:.1rem .4rem;border-radius:4px;cursor:pointer;font-size:.7rem}
+.lb-btn:hover{border-color:var(--accent);color:var(--accent)}
+.lb-btn.active{background:var(--accent);border-color:var(--accent);color:#000}
+.btn-remove{background:transparent;border:2px solid rgba(255,255,255,.2);color:var(--muted);width:1.5rem;height:1.5rem;border-radius:50%;cursor:pointer;font-size:.8rem}
+.btn-remove:hover{background:#ef4444;border-color:#ef4444;color:#fff}
+.stats{margin-top:1rem;padding-top:.75rem;border-top:2px solid rgba(255,255,255,.1)}
+.stat-row{display:flex;justify-content:space-between;padding:.3rem 0;font-size:.9rem}
+.stat-label{color:var(--muted)}
+.stat-value{font-weight:700}
+.filter-btn{background:transparent;border:2px solid rgba(255,255,255,.1);color:var(--muted);padding:.4rem .8rem;border-radius:6px;cursor:pointer;font-size:.8rem;text-transform:uppercase;font-weight:700}
+.filter-btn:hover{border-color:var(--accent);color:var(--accent)}
+.filter-btn.active{background:var(--accent);border-color:var(--accent);color:#000}
+#cardGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.75rem}
+.filters{display:flex;gap:.4rem;margin-bottom:.5rem;flex-wrap:wrap}
+.sim-panel{margin-top:1rem;padding-top:.75rem;border-top:2px solid rgba(255,255,255,.1)}
+.sim-row{display:flex;justify-content:space-between;align-items:center;padding:.4rem 0}
+.sim-label{color:var(--muted);font-size:.85rem}
+.sim-value{color:var(--accent);font-weight:700}
+input[type="range"]{width:120px;margin:0 .5rem}
+.btn-sim{background:var(--accent);color:#000;border:none;padding:.6rem 1.5rem;border-radius:6px;font-weight:700;cursor:pointer;font-size:1rem;width:100%;margin-top:.5rem}
+.btn-sim:hover{opacity:.9}
+.btn-sim:disabled{opacity:.5;cursor:not-allowed}
+.results{margin-top:1rem;padding:.75rem;background:rgba(0,0,0,.3);border-radius:8px}
+.results h3{font-size:.9rem;color:var(--accent);margin-bottom:.5rem}
+.result-row{display:flex;justify-content:space-between;padding:.2rem 0;font-size:.85rem}
+.result-label{color:var(--muted)}
+.result-value{font-weight:700;color:#22c55e}
+.race-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin-top:.5rem}
+.race-cell{width:100%;aspect-ratio:1;border:1px solid rgba(255,255,255,.1);border-radius:3px;cursor:pointer;font-size:.55rem;display:flex;align-items:center;justify-content:center;font-weight:700;text-align:center;line-height:1}
+.race-cell:hover{border-color:var(--accent)}
+.race-cell.G1{background:#f59e0b;color:#000}
+.race-cell.G2{background:#3b82f6;color:#fff}
+.race-cell.G3{background:#8b5cf6;color:#fff}
+.race-cell.summer{background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.4)}
+.race-cell.empty{background:rgba(255,255,255,.03)}
+.race-legend{display:flex;gap:.5rem;margin-top:.3rem;font-size:.7rem;color:var(--muted)}
+.race-legend span{padding:.1rem .4rem;border-radius:3px;font-weight:700}
+.race-legend .g1{background:#f59e0b;color:#000}
+.race-legend .g2{background:#3b82f6;color:#fff}
+.race-legend .g3{background:#8b5cf6;color:#fff}
+.race-grade-sel{display:flex;gap:.3rem;margin-top:.3rem}
+.race-grade-btn{padding:.2rem .6rem;border-radius:4px;border:1px solid rgba(255,255,255,.2);background:transparent;color:var(--muted);cursor:pointer;font-size:.75rem;font-weight:700}
+.race-grade-btn:hover{border-color:var(--accent)}
+.race-grade-btn.active{border-color:transparent}
+.race-grade-btn.active[data-grade="G1"]{background:#f59e0b;color:#000}
+.race-grade-btn.active[data-grade="G2"]{background:#3b82f6;color:#fff}
+.race-grade-btn.active[data-grade="G3"]{background:#8b5cf6;color:#fff}
+.race-grade-btn.active[data-grade="clear"]{background:#ef4444;color:#fff}
+.stat-bonus-row{display:flex;align-items:center;gap:.4rem;margin-top:.3rem;font-size:.75rem}
+.stat-bonus-row .stat-label-s{width:3.5rem;color:var(--muted);font-weight:700;text-transform:uppercase}
+.stat-bonus-row input[type=range]{width:70px;margin:0}
+.stat-bonus-row .stat-val{color:var(--accent);font-weight:700;width:2rem;text-align:right}
+.starting-row{display:flex;align-items:center;gap:.4rem;margin-top:.2rem;font-size:.75rem}
+.starting-row .stat-label-s{width:3.5rem;color:var(--muted);font-weight:700;text-transform:uppercase}
+.starting-row input[type=number]{background:var(--surface);border:1px solid rgba(255,255,255,.2);border-radius:4px;color:var(--accent);font-weight:700;width:3rem;padding:.15rem .3rem;font-size:.75rem;text-align:center}
+.view-toggle{display:flex;gap:.25rem;margin-bottom:.75rem}
+.btn-toggle{background:transparent;border:1px solid rgba(255,255,255,.2);color:var(--muted);padding:.3rem .8rem;border-radius:4px;cursor:pointer;font-size:.8rem;font-weight:600}
+.btn-toggle:hover{border-color:var(--accent);color:var(--accent)}
+.btn-toggle.active{background:var(--accent);border-color:var(--accent);color:#000}
+.dist-graph{margin-bottom:1.25rem}
+.dist-label{font-weight:700;color:var(--accent);font-size:.9rem;margin-bottom:.4rem}
+.dist-axis{position:relative;padding-bottom:.6rem}
+.dist-tick{position:absolute;bottom:0;font-size:.7rem;color:var(--muted);transform:translateX(-50%)}
+.dist-tick:first-child{transform:translateX(0)}
+.dist-tick:last-child{transform:translateX(-100%)}
+.dist-bar{position:relative;height:.8rem;background:rgba(255,255,255,.08);border-radius:4px;margin-top:.7rem}
+.dist-iqr{position:absolute;top:0;height:100%;background:rgba(69,194,229,.4);border-radius:3px}
+.dist-median{position:absolute;top:-4px;width:12px;height:calc(100% + 8px);background:#45c2e5;border-radius:3px;transform:translateX(-50%)}
+.dist-avg-marker{position:absolute;top:-5px;width:10px;height:calc(100% + 10px);background:#22c55e;border-radius:50%;transform:translateX(-50%)}
+.dist-legend{display:flex;gap:1rem;font-size:.75rem;color:var(--muted);margin-top:.35rem;align-items:center}
+.dist-dot{width:10px;height:10px;border-radius:2px;display:inline-block}
+.dist-dot.median{background:#45c2e5}
+.dist-dot.iqr{background:rgba(69,194,229,.4)}
+.dist-avg-val{color:#22c55e;font-weight:700;margin-left:auto}
+.dist-cursor-tooltip{position:absolute;top:-22px;transform:translateX(-50%);background:var(--accent);color:#000;padding:2px 6px;border-radius:3px;font-size:.65rem;font-weight:700;display:none;white-space:nowrap}
+.progress-container{margin-top:.75rem}
+.progress-bar{height:1.5rem;background:rgba(255,255,255,.1);border-radius:6px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);width:0;transition:width .1s ease}
+.progress-text{font-size:.85rem;color:var(--muted);margin-top:.3rem;text-align:center}
+    </style>
+</head>
+<body>
+    <div class="container-fluid px-4 py-3">
+        <header class="d-flex justify-content-between align-items-center mb-3 pb-2" style="border-bottom:2px solid rgba(255,255,255,.1)">
+            <h1>Sweeplyzer</h1>
+            <div class="d-flex align-items-center gap-3" style="font-size:1.1rem;font-weight:700;color:var(--accent)">
+                <span style="font-size:1.1rem;font-weight:900;margin-right:.75rem">LB</span>
+                <div id="lbSelector"></div>
+            </div>
+        </header>
+        <div class="row">
+            <div class="col-12 col-lg-9">
+                <input type="text" class="search" id="search" placeholder="Search...">
+                <div class="filters" id="filters"></div>
+                <div id="cardGrid"></div>
+            </div>
+            <div class="col-12 col-lg-3">
+                <div class="sidebar">
+                    <h2>Deck (<span id="deckCount">0</span>/6)</h2>
+                    <div id="deckList"></div>
+                    <div class="stats" id="stats"></div>
+                    
+                    <div class="sim-panel">
+                        <div class="sim-row">
+                            <span class="sim-label">Training Days</span>
+                            <span class="sim-value" id="turnsValue">72</span>
+                        </div>
+                        <input type="range" id="turnsSlider" min="20" max="78" value="72">
+                        
+                        <div class="sim-row">
+                            <span class="sim-label">Simulations</span>
+                            <span class="sim-value" id="simsValue">1111</span>
+                        </div>
+                        <input type="range" id="simsSlider" min="1" max="1111" value="1111">
+                        
+                        <div style="margin-top:.75rem;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.1)">
+                            <div class="sim-row"><span class="sim-label">Stat Bonus</span><span class="sim-value" id="bonusTotal">30%</span></div>
+                            <div class="stat-bonus-row"><span class="stat-label-s">Spd</span><input type="range" min="0" max="30" value="6" id="bonusSpd"><span class="stat-val" id="bonusSpdVal">6%</span></div>
+                            <div class="stat-bonus-row"><span class="stat-label-s">Sta</span><input type="range" min="0" max="30" value="6" id="bonusSta"><span class="stat-val" id="bonusStaVal">6%</span></div>
+                            <div class="stat-bonus-row"><span class="stat-label-s">Pow</span><input type="range" min="0" max="30" value="6" id="bonusPow"><span class="stat-val" id="bonusPowVal">6%</span></div>
+                            <div class="stat-bonus-row"><span class="stat-label-s">Gut</span><input type="range" min="0" max="30" value="6" id="bonusGut"><span class="stat-val" id="bonusGutVal">6%</span></div>
+                            <div class="stat-bonus-row"><span class="stat-label-s">Wis</span><input type="range" min="0" max="30" value="6" id="bonusWis"><span class="stat-val" id="bonusWisVal">6%</span></div>
+                        </div>
+                        
+                        <div style="margin-top:.75rem;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.1)">
+                            <div class="sim-row"><span class="sim-label">Starting Stats</span></div>
+                            <div class="starting-row"><span class="stat-label-s">Spd</span><input type="number" min="1" max="999" value="88" id="startSpd"></div>
+                            <div class="starting-row"><span class="stat-label-s">Sta</span><input type="number" min="1" max="999" value="88" id="startSta"></div>
+                            <div class="starting-row"><span class="stat-label-s">Pow</span><input type="number" min="1" max="999" value="88" id="startPow"></div>
+                            <div class="starting-row"><span class="stat-label-s">Gut</span><input type="number" min="1" max="999" value="88" id="startGut"></div>
+                            <div class="starting-row"><span class="stat-label-s">Wis</span><input type="number" min="1" max="999" value="88" id="startWis"></div>
+                        </div>
+                        
+                        <div style="margin-top:.75rem;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.1)">
+                            <div class="sim-row">
+                                <span class="sim-label">Race Schedule</span>
+                                <span class="sim-value" id="raceCount">0</span>
+                            </div>
+                            <div class="race-legend">
+                                <span class="g1">G1</span><span class="g2">G2</span><span class="g3">G3</span>
+                            </div>
+                            <div class="race-grade-sel">
+                                <button class="race-grade-btn active" data-grade="G1">G1</button>
+                                <button class="race-grade-btn" data-grade="G2">G2</button>
+                                <button class="race-grade-btn" data-grade="G3">G3</button>
+                                <button class="race-grade-btn" data-grade="clear">X</button>
+                            </div>
+                            <div class="race-grid" id="raceGrid"></div>
+                        </div>
+                        
+                        <button class="btn-sim" id="btnSim" disabled>Run Simulation</button>
+                    </div>
+                    
+                    <div id="results"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+let allCards=[], deck=[], filterType='all', lbLevel=4, searchText='';
+let simTurns=72, simCount=1111;
+let raceSchedule={}, raceGrade='G1';
+const SUMMER=new Set([37,38,39,40,61,62,63,64]);
+const NO_IMG='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect fill=%27%23111%27 width=%27100%27 height=%27100%27/%3E%3C/svg%3E';
+const bonusIds=['bonusSpd','bonusSta','bonusPow','bonusGut','bonusWis'];
+
+async function init(){
+    try{
+        allCards=await fetch('/api/cards').then(r=>r.json());
+        renderLB();
+        renderFilters();
+        renderCards();
+        renderDeck();
+    }catch(e){
+        document.getElementById('cardGrid').innerHTML='<p style="color:var(--muted);padding:2rem">Run: python main.py</p>';
+    }
+}
+
+function getVal(card,l,k){return ((card.effects||[])[l]||{})[k]||0;}
+
+function renderLB(){
+    document.getElementById('lbSelector').innerHTML=[0,1,2,3,4].map(i=>`<button class="lb-btn ${i===lbLevel?'active':''}" data-lb="${i}">${i}</button>`).join('');
+    document.querySelectorAll('#lbSelector .lb-btn').forEach(b=>b.onclick=()=>{
+        lbLevel=+b.dataset.lb;
+        document.querySelectorAll('#lbSelector .lb-btn').forEach(x=>x.classList.remove('active'));
+        b.classList.add('active');
+        updateCardStats();
+    });
+}
+
+function renderFilters(){
+    const types=['all','speed','stamina','power','guts','wisdom','friend','group'];
+    document.getElementById('filters').innerHTML=types.map(t=>`<button class="filter-btn ${t===filterType?'active':''}" data-type="${t}">${t}</button>`).join('');
+    document.querySelectorAll('.filter-btn').forEach(b=>b.onclick=()=>{
+        filterType=b.dataset.type;
+        document.querySelectorAll('.filter-btn').forEach(x=>x.classList.remove('active'));
+        b.classList.add('active');
+        renderCardGrid();
+    });
+}
+
+function renderCards(){
+    document.getElementById('cardGrid').innerHTML=allCards.map(c=>`<div class="card" data-id="${c.id}">
+        <img src="${c.image_url}" onerror="this.src='${NO_IMG}'" loading="eager">
+        <div class="card-title">${c.title}</div>
+        <div class="card-type">${c.type||''}</div>
+        <div class="card-stats">
+            <span class="pill race">${getVal(c,lbLevel,'race_bonus')}</span>
+            <span class="pill fan">${getVal(c,lbLevel,'fan_bonus')}</span>
+        </div>
+    </div>`).join('');
+    document.querySelectorAll('.card').forEach(el=>el.onclick=()=>{
+        let id=el.dataset.id, card=allCards.find(x=>x.id===id);
+        let idx=deck.findIndex(x=>x.id===id);
+        if(idx>=0)deck.splice(idx,1);
+        else if(deck.length<6)deck.push({id:card.id,card,lb:lbLevel});
+        renderCardGrid();
+        renderDeck();
+    });
+    renderCardGrid();
+}
+
+function renderCardGrid(){
+    let list=allCards.filter(x=>filterType==='all'||x.type===filterType);
+    if(searchText)list=list.filter(x=>x.title.toLowerCase().includes(searchText.toLowerCase()));
+    let selected=new Set(deck.map(x=>x.card.title));
+    document.querySelectorAll('.card').forEach(el=>{
+        let c=allCards.find(x=>x.id===el.dataset.id);
+        el.classList.toggle('selected',deck.some(x=>x.id===c.id));
+        el.classList.toggle('greyed',selected.has(c.title)&&!deck.some(x=>x.id===c.id));
+    });
+    document.querySelectorAll('.card').forEach(el=>el.style.display='none');
+    list.forEach(c=>{let el=document.querySelector(`.card[data-id="${c.id}"]`);if(el)el.style.display='block';});
+}
+
+function updateCardStats(){
+    document.querySelectorAll('.card').forEach(el=>{
+        let c=allCards.find(x=>x.id===el.dataset.id);
+        el.querySelector('.pill.race').textContent=getVal(c,lbLevel,'race_bonus');
+        el.querySelector('.pill.fan').textContent=getVal(c,lbLevel,'fan_bonus');
+    });
+}
+
+function renderDeck(){
+    document.getElementById('deckCount').textContent=deck.length;
+    document.getElementById('btnSim').disabled=deck.length===0;
+    if(!deck.length){document.getElementById('deckList').innerHTML='';document.getElementById('stats').innerHTML='';return;}
+    document.getElementById('deckList').innerHTML=deck.map((item,idx)=>`<div class="deck-card">
+        <img src="${item.card.image_url}" onerror="this.src='${NO_IMG}'">
+        <div class="deck-card-info">
+            <div class="deck-card-name">${item.card.title}</div>
+            <div class="deck-card-stats">
+                <span class="race">${getVal(item.card,item.lb,'race_bonus')}</span> / 
+                <span class="fan">${getVal(item.card,item.lb,'fan_bonus')}</span>
+            </div>
+            <div class="lb-selector">
+                ${[0,1,2,3,4].map(lb=>`<button class="lb-btn ${lb===item.lb?'active':''}" data-idx="${idx}" data-lb="${lb}">${lb}</button>`).join('')}
+            </div>
+        </div>
+        <button class="btn-remove" data-id="${item.id}">x</button>
+    </div>`).join('');
+    document.querySelectorAll('.deck-card .lb-btn').forEach(b=>b.onclick=e=>{
+        e.stopPropagation();
+        let idx=+b.dataset.idx, newLb=+b.dataset.lb;
+        if(idx>=0&&idx<deck.length)deck[idx].lb=newLb, renderDeck();
+    });
+    document.querySelectorAll('.btn-remove').forEach(b=>b.onclick=e=>{
+        e.stopPropagation();
+        let idx=deck.findIndex(x=>x.id===b.dataset.id);
+        if(idx>=0)deck.splice(idx,1), renderCardGrid(), renderDeck();
+    });
+    let tR=0, tF=0;
+    deck.forEach(i=>{tR+=getVal(i.card,i.lb,'race_bonus');tF+=getVal(i.card,i.lb,'fan_bonus');});
+    document.getElementById('stats').innerHTML=`<div class="stat-row"><span class="stat-label">Race Bonus</span><span class="stat-value" style="color:#f59e0b">${tR}%</span></div>
+        <div class="stat-row"><span class="stat-label">Fan Bonus</span><span class="stat-value" style="color:#ec4899">${tF}%</span></div>`;
+}
+
+document.getElementById('search').oninput=e=>{searchText=e.target.value;renderCardGrid();};
+document.getElementById('turnsSlider').oninput=e=>{simTurns=+e.target.value;document.getElementById('turnsValue').textContent=simTurns;renderRaceGrid();};
+document.getElementById('simsSlider').oninput=e=>{simCount=+e.target.value;document.getElementById('simsValue').textContent=simCount;};
+
+document.querySelectorAll('.race-grade-btn').forEach(b=>b.onclick=()=>{
+    raceGrade=b.dataset.grade;
+    document.querySelectorAll('.race-grade-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+});
+
+function renderRaceGrid(){
+    let html='';
+    for(let t=1;t<=simTurns;t++){
+        let g=raceSchedule[t], cls=g||'empty';
+        if(SUMMER.has(t)&&!g)cls+=' summer';
+        html+=`<div class="race-cell ${cls}" data-turn="${t}">${g||t}</div>`;
+    }
+    document.getElementById('raceGrid').innerHTML=html;
+    document.querySelectorAll('.race-cell').forEach(el=>el.onclick=()=>{
+        let t=+el.dataset.turn;
+        if(raceGrade==='clear')delete raceSchedule[t];
+        else raceSchedule[t]===raceGrade?delete raceSchedule[t]:raceSchedule[t]=raceGrade;
+        renderRaceGrid();
+    });
+    document.getElementById('raceCount').textContent=Object.keys(raceSchedule).length;
+}
+renderRaceGrid();
+
+function showView(name,btn){
+    document.querySelectorAll('.result-view').forEach(el=>el.style.display='none');
+    document.querySelectorAll('.btn-toggle').forEach(el=>el.classList.remove('active'));
+    document.getElementById('view-'+name).style.display='block';
+    btn.classList.add('active');
+}
+
+function distGraph(label,d){
+    let r=d.max-d.min||1;
+    return `<div class="dist-graph">
+        <div class="dist-label">${label}</div>
+        <div class="dist-axis">
+            <div class="dist-tick" style="left:0%">${d.min}</div>
+            <div class="dist-tick" style="left:25%">${d.p25}</div>
+            <div class="dist-tick" style="left:50%">${d.p50}</div>
+            <div class="dist-tick" style="left:75%">${d.p75}</div>
+            <div class="dist-tick" style="left:100%">${d.max}</div>
+            <div class="dist-bar" onmousemove="hHover(this,${d.min},${d.max},event)" onmouseout="hOut(this,event)">
+                <div class="dist-iqr" style="left:${((d.p25-d.min)/r*100).toFixed(1)}%;width:${((d.p75-d.p25)/r*100).toFixed(1)}%"></div>
+                <div class="dist-median" style="left:${((d.p50-d.min)/r*100).toFixed(1)}%"></div>
+                <div class="dist-avg-marker" style="left:${((d.mean-d.min)/r*100).toFixed(1)}%"></div>
+                <div class="dist-cursor-tooltip"></div>
+            </div>
+        </div>
+        <div class="dist-legend">
+            <span class="dist-dot median"></span> Median ${d.p50}
+            <span class="dist-dot iqr"></span> IQR ${d.p25}-${d.p75}
+            <span class="dist-avg-val">${d.mean.toFixed(1)} avg</span>
+        </div>
+    </div>`;
+}
+
+function hHover(bar,min,max,e){
+    let pct=Math.max(0,Math.min(100,(e.clientX-bar.getBoundingClientRect().left)/bar.offsetWidth*100));
+    bar.querySelector('.dist-cursor-tooltip').textContent=(min+(pct/100)*(max-min)).toFixed(0);
+    bar.querySelector('.dist-cursor-tooltip').style.left=pct+'%';
+    bar.querySelector('.dist-cursor-tooltip').style.display='block';
+}
+
+function hOut(bar){bar.querySelector('.dist-cursor-tooltip').style.display='none';}
+
+function updateBonusTotal(){
+    let total=0;
+    bonusIds.forEach(id=>total+=+document.getElementById(id).value||0);
+    document.getElementById('bonusTotal').textContent=total+'%';
+    bonusIds.forEach(id=>document.getElementById(id+'Val').textContent=(+document.getElementById(id).value||0)+'%');
+}
+bonusIds.forEach(id=>document.getElementById(id).oninput=updateBonusTotal);
+updateBonusTotal();
+
+document.getElementById('btnSim').onclick=async function(){
+    if(deck.length===0)return;
+    this.disabled=true;
+    this.textContent='Simulating...';
+    document.getElementById('results').innerHTML=`<div class="results"><h3>Simulation Progress</h3><div class="progress-container"><div class="progress-bar"><div class="progress-fill" id="pf"></div></div><div class="progress-text" id="pt">0 / ${simCount}</div></div></div>`;
+    
+    try{
+        let deckData=deck.map(i=>({card_id:i.id,lb:i.lb}));
+        let raceList=Object.entries(raceSchedule).map(([t,g])=>({turn:+t,grade:g}));
+        let statBonus=bonusIds.map(id=>+document.getElementById(id).value||0);
+        let startStats=['startSpd','startSta','startPow','startGut','startWis'].map(id=>+document.getElementById(id).value||88);
+        
+        let res=await fetch('/api/simulate',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({deck:deckData,num_simulations:simCount,max_turns:simTurns,race_schedule:raceList,stat_bonus:statBonus,starting_stats:startStats})
+        });
+        
+        let reader=res.body.getReader(), decoder=new TextDecoder(), result=null;
+        while(true){
+            let {done,value}=await reader.read();
+            if(done)break;
+            for(let line of decoder.decode(value).split('\n')){
+                if(line.startsWith('data:')){
+                    let data=JSON.parse(line.slice(5));
+                    if(data.progress!==undefined){
+                        let pct=(data.progress/data.total*100).toFixed(1);
+                        document.getElementById('pf').style.width=pct+'%';
+                        document.getElementById('pt').textContent=`${data.progress} / ${data.total} (${pct}%)`;
+                    }
+                    if(data.done)result=data.result;
+                }
+            }
+        }
+        
+        if(result.error){document.getElementById('results').innerHTML=`<div style="color:#ef4444;padding:1rem">${result.error}</div>`;}
+        else{
+            let s=result.avg_stats, d=result.dist_stats, p=result.peak_run;
+            document.getElementById('results').innerHTML=`<div class="results">
+                <div class="view-toggle" style="margin-bottom:1rem">
+                    <button class="btn-toggle active" onclick="showView('default',this)">Average</button>
+                    <button class="btn-toggle" onclick="showView('details',this)">Details</button>
+                    <button class="btn-toggle" onclick="showView('peak',this)">Peak</button>
+                </div>
+                <div id="view-default" class="result-view">
+                    <h3>Simulation Results (${result.num_simulations} runs, ${result.max_turns} days)</h3>
+                    <div class="result-row"><span class="result-label">Speed</span><span class="result-value">${s.speed.toFixed(1)}</span></div>
+                    <div class="result-row"><span class="result-label">Stamina</span><span class="result-value">${s.stamina.toFixed(1)}</span></div>
+                    <div class="result-row"><span class="result-label">Power</span><span class="result-value">${s.power.toFixed(1)}</span></div>
+                    <div class="result-row"><span class="result-label">Guts</span><span class="result-value">${s.guts.toFixed(1)}</span></div>
+                    <div class="result-row"><span class="result-label">Wisdom</span><span class="result-value">${s.wisdom.toFixed(1)}</span></div>
+                    <div class="result-row" style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.1)">
+                        <span class="result-label">Skill Points</span><span class="result-value">${result.avg_skill_points.toFixed(1)}</span>
+                    </div>
+                </div>
+                <div id="view-details" class="result-view" style="display:none">
+                    <h3>Distribution (${result.num_simulations} runs)</h3>
+                    ${distGraph('Speed',d.speed)}${distGraph('Stamina',d.stamina)}${distGraph('Power',d.power)}${distGraph('Guts',d.guts)}${distGraph('Wisdom',d.wisdom)}${distGraph('SP',d.sp)}
+                </div>
+                <div id="view-peak" class="result-view" style="display:none">
+                    <h3>Peak Run (#${p.run_index})</h3>
+                    <div class="result-row"><span class="result-label">Speed</span><span class="result-value">${p.speed}</span></div>
+                    <div class="result-row"><span class="result-label">Stamina</span><span class="result-value">${p.stamina}</span></div>
+                    <div class="result-row"><span class="result-label">Power</span><span class="result-value">${p.power}</span></div>
+                    <div class="result-row"><span class="result-label">Guts</span><span class="result-value">${p.guts}</span></div>
+                    <div class="result-row"><span class="result-label">Wisdom</span><span class="result-value">${p.wisdom}</span></div>
+                    <div class="result-row" style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.1)">
+                        <span class="result-label">Skill Points</span><span class="result-value">${p.sp}</span>
+                    </div>
+                </div>
+            </div>`;
+        }
+    }catch(e){document.getElementById('results').innerHTML=`<div style="color:#ef4444;padding:1rem">Error: ${e}</div>`;}
+    this.disabled=false;
+    this.textContent='Run Simulation';
+};
+
+init();
+    </script>
+</body>
+</html>
