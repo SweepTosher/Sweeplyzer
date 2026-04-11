@@ -441,14 +441,14 @@ document.getElementById('btnSim').onclick=async function(){
                     <div class="result-row"><span class="result-label">Stamina</span><span class="result-value">${s.stamina.toFixed(1)}</span></div>
                     <div class="result-row"><span class="result-label">Power</span><span class="result-value">${s.power.toFixed(1)}</span></div>
                     <div class="result-row"><span class="result-label">Guts</span><span class="result-value">${s.guts.toFixed(1)}</span></div>
-                    <div class="result-row"><span class="result-label">Wisdom</span><span class="result-value">${s.wisdom.toFixed(1)}</span></div>
+                    <div class="result-row"><span class="result-label">Wit</span><span class="result-value">${s.wisdom.toFixed(1)}</span></div>
                     <div class="result-row" style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.1)">
                         <span class="result-label">Skill Points</span><span class="result-value">${result.avg_skill_points.toFixed(1)}</span>
                     </div>
                 </div>
                 <div id="view-details" class="result-view" style="display:none">
                     <h3>Distribution (${result.num_simulations} runs)</h3>
-                    ${distGraph('Speed',d.speed)}${distGraph('Stamina',d.stamina)}${distGraph('Power',d.power)}${distGraph('Guts',d.guts)}${distGraph('Wisdom',d.wisdom)}${distGraph('SP',d.sp)}
+                    ${distGraph('Speed',d.speed)}${distGraph('Stamina',d.stamina)}${distGraph('Power',d.power)}${distGraph('Guts',d.guts)}${distGraph('Wit',d.wisdom)}${distGraph('SP',d.sp)}
                 </div>
                 <div id="view-peak" class="result-view" style="display:none">
                     <h3>Peak Run (#${p.run_index})</h3>
@@ -456,7 +456,7 @@ document.getElementById('btnSim').onclick=async function(){
                     <div class="result-row"><span class="result-label">Stamina</span><span class="result-value">${p.stamina}</span></div>
                     <div class="result-row"><span class="result-label">Power</span><span class="result-value">${p.power}</span></div>
                     <div class="result-row"><span class="result-label">Guts</span><span class="result-value">${p.guts}</span></div>
-                    <div class="result-row"><span class="result-label">Wisdom</span><span class="result-value">${p.wisdom}</span></div>
+                    <div class="result-row"><span class="result-label">Wit</span><span class="result-value">${p.wisdom}</span></div>
                     <div class="result-row" style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.1)">
                         <span class="result-label">Skill Points</span><span class="result-value">${p.sp}</span>
                     </div>
