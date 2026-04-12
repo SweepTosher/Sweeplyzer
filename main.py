@@ -162,7 +162,7 @@ def simulate():
             return jsonify({'error': 'Deck must be a non-empty list'}), 400
         if len(deck) > 6:
             return jsonify({'error': 'Deck cannot have more than 6 cards'}), 400
-        num_simulations = min(1111, max(1, data.get('num_simulations', 11)))
+        num_simulations = min(3333, max(1, data.get('num_simulations', 3333)))
         max_turns       = min(78,   max(20, data.get('max_turns', 72)))
         race_schedule   = data.get('race_schedule', [])
         stat_bonus      = data.get('stat_bonus', [0, 0, 0, 0, 0])
@@ -194,7 +194,7 @@ def rank_cards():
             return jsonify({'error': 'Missing candidates'}), 400
         candidates     = data['candidates']
         base_deck      = data.get('base_deck', [])
-        num_sims       = min(111, max(1, data.get('num_simulations', 11)))
+        num_sims       = min(3333, max(1, data.get('num_simulations', 3333)))
         max_turns      = min(78,  max(20, data.get('max_turns', 72)))
         race_schedule  = data.get('race_schedule', [])
         stat_bonus     = data.get('stat_bonus', [0, 0, 0, 0, 0])
