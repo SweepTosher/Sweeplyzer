@@ -9,7 +9,7 @@
     <style>
 :root{--bg:#0a0012;--surface:#1a1420;--text:#fff;--muted:#aaa;--accent:#45c2e5}
 *{transition:background .2s,border-color .2s,box-shadow .2s,color .2s}
-html,body{margin:0;padding:0;width:100%;min-height:100vh}
+html,body{margin:0;padding:0;width:100%;min-height:100vh;overflow-y:auto}
 body{background:var(--bg);color:var(--text);font-family:Inter,'Segoe UI',system-ui,-apple-system,sans-serif}
 h1{font-size:1.5rem;font-weight:900;color:var(--accent)}
 .search{background:var(--surface);border:2px solid rgba(255,255,255,.1);border-radius:8px;padding:.6rem 1rem;color:var(--text);font-size:.95rem;width:100%;margin-bottom:1rem}
@@ -51,6 +51,8 @@ h1{font-size:1.5rem;font-weight:900;color:var(--accent)}
 .filter-btn.active{background:var(--accent);border-color:var(--accent);color:#000}
 #cardGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.75rem}
 .filters{display:flex;gap:.4rem;margin-bottom:.5rem;flex-wrap:wrap}
+.btn-exit-rank{background:#ef4444;color:#fff;border:none;padding:.4rem 1rem;border-radius:6px;font-weight:700;cursor:pointer;font-size:.85rem;margin-bottom:.5rem}
+.btn-exit-rank:hover{opacity:.9}
 .rank-sort{display:flex;gap:.4rem;margin-bottom:.5rem}
 .rank-sort-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:.3rem .6rem;color:var(--text);font-size:.75rem;cursor:pointer}
 .rank-sort-btn:hover{border-color:var(--accent)}
@@ -65,6 +67,28 @@ h1{font-size:1.5rem;font-weight:900;color:var(--accent)}
 .btn-sim:disabled{opacity:.5;cursor:not-allowed}
 .btn-rank{background:#8b5cf6;color:#fff;border:none;padding:.6rem 1.5rem;border-radius:6px;font-weight:700;cursor:pointer;font-size:1rem;width:100%;margin-top:.5rem}
 .btn-rank:hover{opacity:.9}
+.btn-rank:disabled{opacity:.5;cursor:not-allowed}
+.rank-pool{position:relative;min-height:140px;border:2px dashed rgba(255,255,255,.15);border-radius:6px;padding:.5rem;margin-top:.5rem;display:flex;flex-wrap:wrap;gap:.5rem;align-content:flex-start}
+.rank-pool.drag-over{border-color:var(--accent);background:rgba(69,194,229,.05)}
+.rank-pool-empty{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--muted);font-size:.85rem;text-align:center;pointer-events:none;z-index:1}
+.rank-pool-header{display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:.3rem}
+.rank-pool-header span{font-size:.75rem;font-weight:700;color:var(--muted)}
+.rank-pool-header .clear-btn,.rank-pool-header .btn-clear-rank{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:.7rem;padding:0}
+.rank-pool-header .clear-btn:hover,.rank-pool-header .btn-clear-rank:hover{color:#ef4444}
+.rank-pool-header{display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:.3rem}
+.rank-pool-header .clear-btn{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:.7rem}
+.rank-pool-header .clear-btn:hover{color:#ef4444}
+.btn-clear-rank{background:#8b5cf6;color:#fff;border:none;padding:.4rem 1rem;border-radius:6px;font-weight:700;cursor:pointer;font-size:.8rem;margin-top:.5rem}
+.btn-clear-rank:hover{opacity:.9}
+.rank-card{background:var(--surface);border:2px solid rgba(255,255,255,.1);border-radius:10px;padding:.4rem;cursor:grab;width:calc(33.33% - .35rem);box-sizing:border-box}
+.rank-card:active{cursor:grabbing}
+.rank-card img{width:100%;aspect-ratio:1;object-fit:contain;background:#000;border-radius:6px}
+.rank-card-title{font-size:.7rem;margin-top:.3rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;color:var(--accent)}
+.rank-card-type{font-size:.6rem;color:var(--muted);text-transform:uppercase;margin-top:.1rem}
+.rank-card-stats{display:flex;gap:.3rem;margin-top:.3rem}
+.rank-card .pill{font-size:.65rem;padding:.15rem .4rem;border-radius:3px;font-weight:700}
+.rank-card .pill.race{color:#f59e0b}
+.rank-card .pill.fan{color:#ec4899}
 .results{margin-top:1rem;padding:.75rem;background:rgba(0,0,0,.3);border-radius:8px}
 .results h3{font-size:.9rem;color:var(--accent);margin-bottom:.5rem}
 .result-row{display:flex;justify-content:space-between;padding:.2rem 0;font-size:.85rem}
@@ -133,8 +157,10 @@ h1{font-size:1.5rem;font-weight:900;color:var(--accent)}
         <div class="row">
             <div class="col-12 col-lg-9">
                 <input type="text" class="search" id="search" placeholder="Search...">
-                <div class="filters" id="filters"></div>
-                <div class="rank-sort" id="rankSort" style="display:none;margin-bottom:.5rem"></div>
+                <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:.5rem">
+                    <div class="filters" id="filters"></div>
+                    <button class="btn-exit-rank" id="btnExitRank" style="display:none" onclick="rankPool=[];cardRankings=null;renderPool();renderCardGrid();renderRankSort();">Exit Ranking</button>
+                </div>
                 <div id="cardGrid"></div>
             </div>
             <div class="col-12 col-lg-3">
@@ -191,8 +217,20 @@ h1{font-size:1.5rem;font-weight:900;color:var(--accent)}
                             <div class="race-grid" id="raceGrid"></div>
                         </div>
                         
+                        <div class="rank-pool" id="rankPool">
+                            <div class="rank-pool-header">
+                                <span style="font-size:.7rem;font-weight:700;color:var(--muted)">Rank Pool (<span id="poolCount">0</span>)</span>
+                                <div style="display:flex;gap:.5rem">
+                                    <button class="clear-btn" id="btnClearPool">Clear Pool</button>
+                                    <button class="btn-clear-rank" id="btnClearRank" style="display:none">Clear Rankings</button>
+                                </div>
+                            </div>
+                            <div class="rank-pool-empty" id="poolEmpty">Drag cards here</div>
+                            <div id="poolCards" style="display:flex;flex-wrap:wrap;gap:.5rem;width:100%"></div>
+                        </div>
+                        
                         <button class="btn-sim" id="btnSim" disabled>Run Simulation</button>
-                        <button class="btn-rank" id="btnRank" style="display:none">Rank</button>
+                        <button class="btn-rank" id="btnRank" disabled>Rank Pool</button>
                     </div>
                     
                     <div id="results"></div>
@@ -201,7 +239,7 @@ h1{font-size:1.5rem;font-weight:900;color:var(--accent)}
         </div>
     </div>
     <script>
-let allCards=[], deck=[], filterType='all', searchText='';
+let allCards=[], deck=[], rankPool=[], filterType='all', searchText='';
 let simTurns=72, simCount=3333;
 let raceSchedule={}, raceGrade='G1';
 let cardRankings=null;
@@ -212,11 +250,17 @@ const bonusIds=['bonusSpd','bonusSta','bonusPow','bonusGut','bonusWis'];
 
 async function init(){
     try{
-        allCards=await fetch('/api/cards').then(r=>r.json());
+        allCards=await fetch('/api/cards').then(r=>{
+            if(!r.ok)throw new Error('API failed');
+            return r.json();
+        });
+        if(!allCards.length)throw new Error('No cards returned');
         renderFilters();
         renderCards();
         renderDeck();
+        renderPool();
     }catch(e){
+        console.error('Init error:', e);
         document.getElementById('cardGrid').innerHTML='<p style="color:var(--muted);padding:2rem">Run: python main.py</p>';
     }
 }
@@ -234,23 +278,15 @@ function renderFilters(){
     });
 }
 
-function renderRankSort(){
-    const container=document.getElementById('rankSort');
-    if(!cardRankings){
-        container.style.display='none';
+function renderCards(){
+    if(!allCards || allCards.length === 0){
         return;
     }
-    container.style.display='flex';
-    container.innerHTML='';
-    renderCardGrid();
-}
-
-function renderCards(){
     let cardsHTML='';
     for(let c of allCards){
         for(let lb=4; lb>=0; lb--){
             let cardId=c.id+'_lb'+lb;
-            cardsHTML+=`<div class="card" data-id="${cardId}" data-base-id="${c.id}" data-lb="${lb}">
+            cardsHTML+=`<div class="card" draggable="true" data-id="${cardId}" data-base-id="${c.id}" data-lb="${lb}">
                 <img src="${c.image_url}" onerror="this.src='${NO_IMG}'" loading="eager">
                 <div class="card-title">${c.title}</div>
                 <div class="card-lb">LB${lb}</div>
@@ -264,21 +300,65 @@ function renderCards(){
     }
     document.getElementById('cardGrid').innerHTML=cardsHTML;
     
-    // Build element cache map for fast lookups
     cardElementMap=new Map();
     document.querySelectorAll('.card').forEach(el=>{
         cardElementMap.set(el.dataset.id, el);
     });
     
-    document.querySelectorAll('.card').forEach(el=>el.onclick=()=>{
-        let baseId=el.dataset.baseId, lb=+el.dataset.lb, card=allCards.find(x=>x.id===baseId);
-        let idx=deck.findIndex(x=>x.id===baseId && x.lb===lb);
-        if(idx>=0)deck.splice(idx,1);
-        else if(deck.length<6)deck.push({id:baseId,card,lb});
-        cardRankings=null;
-        renderCardGrid();
-        renderDeck();
+    window.addEventListener('dragover', e => {
+        const threshold = 100;
+        const y = e.clientY;
+        const height = window.innerHeight;
+        if (y < threshold) {
+            window.scrollBy(0, -10);
+        } else if (y > height - threshold) {
+            window.scrollBy(0, 10);
+        }
     });
+    
+    document.querySelectorAll('.card').forEach(el=>{
+        el.ondragstart=e=>{
+            e.dataTransfer.setData('text/plain',el.dataset.id);
+            el.style.opacity='.3';
+        };
+        el.ondragend=e=>{
+            el.style.opacity='1';
+        };
+        el.onclick=()=>{
+            let baseId=el.dataset.baseId, lb=+el.dataset.lb, card=allCards.find(x=>x.id===baseId);
+            let deckTitles=new Set(deck.map(x=>x.card.title));
+            let poolTitles=new Set(rankPool.map(x=>x.card.title));
+            let inDeckIdx=deck.findIndex(x=>x.id===baseId && x.lb===lb);
+            if(inDeckIdx>=0){
+                deck.splice(inDeckIdx,1);
+            }else if(deckTitles.has(card.title)){
+                deck=deck.filter(x=>x.card.title!==card.title);
+            }else if(poolTitles.has(card.title)){
+                rankPool=rankPool.filter(x=>x.card.title!==card.title);
+            }else if(deck.length<6){
+                deck.push({id:baseId,card,lb});
+            }else{
+                if(!poolTitles.has(card.title)){
+                    for(let l=0;l<=4;l++)rankPool.push({id:baseId,card,lb:l});
+                }
+            }
+            cardRankings=null;
+            renderCardGrid();
+            renderDeck();
+            renderPool();
+        };
+    });
+}
+
+function renderRankSort(){
+    const exitBtn=document.getElementById('btnExitRank');
+    if(cardRankings){
+        if(exitBtn)exitBtn.style.display='block';
+        document.querySelectorAll('.card').forEach(el=>el.style.pointerEvents='none');
+    }else{
+        if(exitBtn)exitBtn.style.display='none';
+        document.querySelectorAll('.card').forEach(el=>el.style.pointerEvents='auto');
+    }
     renderCardGrid();
 }
 
@@ -286,69 +366,78 @@ function renderCardGrid(){
     let baseFiltered=allCards.filter(x=>filterType==='all'||x.type===filterType);
     if(searchText)baseFiltered=baseFiltered.filter(x=>x.title.toLowerCase().includes(searchText.toLowerCase()));
     
-    let deckTitles=new Set(deck.map(x=>x.card.title));
     let deckCards=deck.map(x=>x.id+'_lb'+x.lb);
     let deckSet=new Set(deckCards);
     
     let list=[];
-    for(let c of baseFiltered){
-        for(let lb=4; lb>=0; lb--){
-            list.push({baseId:c.id, card:c, lb});
+    
+    if(cardRankings){
+        let sorted=[...cardRankings].sort((a,b)=>b.avgScore-a.avgScore);
+        let rankMap=new Map();
+        sorted.forEach((r,i)=>rankMap.set(r.baseId+'_lb'+r.lb,i));
+        for(let r of sorted){
+            let card=allCards.find(x=>x.id===r.baseId);
+            if(!card){
+                continue;
+            }
+            if(filterType!=='all' && card.type!==filterType)continue;
+            if(searchText && !card.title.toLowerCase().includes(searchText.toLowerCase()))continue;
+            list.push({baseId:r.baseId, card, lb:r.lb, rank:rankMap.get(r.baseId+'_lb'+r.lb)});
+        }
+    }else{
+        for(let c of baseFiltered){
+            for(let lb=4; lb>=0; lb--){
+                list.push({baseId:c.id, card:c, lb});
+            }
         }
     }
     
+    let deckTitles=new Set(deck.map(x=>x.card.title));
+    let poolCards=new Set(rankPool.map(x=>x.id+'_lb'+x.lb));
     let selectedCards=list.filter(i=>deckSet.has(i.baseId+'_lb'+i.lb));
     let otherCards=list.filter(i=>!deckSet.has(i.baseId+'_lb'+i.lb) && !deckTitles.has(i.card.title));
-    
-    let rankMap=null;
-    if(cardRankings){
-        let sorted=[...cardRankings].sort((a,b)=>b.avgScore-a.avgScore);
-        rankMap=new Map();
-        sorted.forEach((r,i)=>rankMap.set(r.baseId+'_lb'+r.lb,i));
-        
-        otherCards.sort((a,b)=>{
-            let aRank=rankMap.get(a.baseId+'_lb'+a.lb);
-            let bRank=rankMap.get(b.baseId+'_lb'+b.lb);
-            if(aRank===undefined)return 1;
-            if(bRank===undefined)return -1;
-            return aRank-bRank;
-        });
+    if(!cardRankings){
+        otherCards=otherCards.filter(i=>!poolCards.has(i.baseId+'_lb'+i.lb));
     }
     
     list=[...selectedCards,...otherCards];
     
+    let listSet=new Set(list.map(i=>i.baseId+'_lb'+i.lb));
     let grid=document.getElementById('cardGrid');
+    grid.innerHTML='';
     list.forEach(i=>{
         let el=cardElementMap.get(i.baseId+'_lb'+i.lb);
-        if(el)grid.appendChild(el);
-    });
-    
-    cardElementMap.forEach(el=>{
-        let baseId=el.dataset.baseId, lb=+el.dataset.lb, c=allCards.find(x=>x.id===baseId);
-        let inDeck=deckSet.has(baseId+'_lb'+lb);
-        el.classList.toggle('selected',inDeck);
-        el.style.display='none';
-        
-        if(cardRankings && !inDeck){
+        if(el){
             let existingBadge=el.querySelector('.rank-badge');
             if(existingBadge)existingBadge.remove();
-            let rank=rankMap?rankMap.get(baseId+'_lb'+lb):null;
-            if(rank!==null && rank!==undefined){
-                let badge=document.createElement('div');
-                badge.className='rank-badge';
-                badge.textContent=`#${rank+1}`;
-                el.appendChild(badge);
+            el.classList.toggle('selected',deckSet.has(i.baseId+'_lb'+i.lb));
+            el.style.display='block';
+            grid.appendChild(el);
+            if(cardRankings && !deckSet.has(i.baseId+'_lb'+i.lb)){
+                if(i.rank!==undefined){
+                    let badge=document.createElement('div');
+                    badge.className='rank-badge';
+                    badge.textContent=`#${i.rank+1}`;
+                    el.appendChild(badge);
+                }
             }
         }
     });
     
-    list.forEach(i=>{let el=cardElementMap.get(i.baseId+'_lb'+i.lb);if(el)el.style.display='block';});
+    cardElementMap.forEach((el,key)=>{
+        if(listSet.has(key))return;
+        let elTitle=el.querySelector('.card-title')?.textContent;
+        if(deckTitles.has(elTitle)){
+            el.style.display='none';
+        }else if(!cardRankings && poolCards.has(key)){
+            el.style.display='none';
+        }
+    });
 }
 
 function renderDeck(){
     document.getElementById('deckCount').textContent=deck.length;
     document.getElementById('btnSim').disabled=deck.length===0;
-    document.getElementById('btnRank').style.display=deck.length>0&&deck.length<6?'block':'none';
     if(!deck.length){document.getElementById('deckList').innerHTML='';document.getElementById('stats').innerHTML='';return;}
     document.getElementById('deckList').innerHTML=deck.map((item,idx)=>`<div class="deck-card">
         <img src="${item.card.image_url}" onerror="this.src='${NO_IMG}'">
@@ -365,12 +454,97 @@ function renderDeck(){
         e.stopPropagation();
         let key=b.dataset.key;
         let idx=deck.findIndex(x=>x.id+'_lb'+x.lb===key);
-        if(idx>=0)deck.splice(idx,1), cardRankings=null, renderCardGrid(), renderDeck();
+        if(idx>=0){
+            let removed=deck.splice(idx,1)[0];
+            rankPool=rankPool.filter(x=>x.card.title!==removed.card.title);
+        }
+        cardRankings=null;
+        renderCardGrid();
+        renderDeck();
     });
     let tR=0, tF=0;
     deck.forEach(i=>{tR+=getVal(i.card,i.lb,'race_bonus');tF+=getVal(i.card,i.lb,'fan_bonus');});
     document.getElementById('stats').innerHTML=`<div class="stat-row"><span class="stat-label">Race Bonus</span><span class="stat-value" style="color:#f59e0b">${tR}%</span></div>
         <div class="stat-row"><span class="stat-label">Fan Bonus</span><span class="stat-value" style="color:#ec4899">${tF}%</span></div>`;
+}
+
+function renderPool(){
+    let poolEl=document.getElementById('rankPool');
+    poolEl.ondragover=e=>{e.preventDefault();poolEl.classList.add('drag-over')};
+    poolEl.ondragleave=()=>poolEl.classList.remove('drag-over');
+    poolEl.ondrop=e=>{
+        e.preventDefault();
+        poolEl.classList.remove('drag-over');
+        let key=e.dataTransfer.getData('text/plain');
+        if(!key)return;
+        let [baseId,lbStr]=key.split('_lb');
+        let card=allCards.find(x=>x.id===baseId);
+        if(!card)return;
+        let deckTitles=new Set(deck.map(x=>x.card.title));
+        if(deckTitles.has(card.title))return;
+        for(let lb=0; lb<=4; lb++){
+            if(rankPool.some(x=>x.id===baseId && x.lb===lb))continue;
+            rankPool.push({id:baseId,card,lb});
+        }
+        renderPool();
+        renderCardGrid();
+    };
+    document.getElementById('btnRank').disabled=rankPool.length===0;
+    document.getElementById('poolCount').textContent=rankPool.length;
+    let clearRankBtn=document.getElementById('btnClearRank');
+    if(clearRankBtn)clearRankBtn.style.display=cardRankings?'block':'none';
+    let emptyEl=document.getElementById('poolEmpty');
+    if(emptyEl)emptyEl.style.display=rankPool.length?'none':'block';
+    if(!rankPool.length){
+        document.getElementById('poolCards').innerHTML='';
+        return;
+    }
+    document.getElementById('poolCards').innerHTML=rankPool.map(item=>`<div class="rank-card" draggable="true" data-key="${item.id}_lb${item.lb}">
+        <img src="${item.card.image_url}" onerror="this.src='${NO_IMG}'">
+        <div class="rank-card-title">${item.card.title}</div>
+        <div class="rank-card-type">${item.card.type||''} LB${item.lb}</div>
+        <div class="rank-card-stats">
+            <span class="pill race">${getVal(item.card,item.lb,'race_bonus')}</span>
+            <span class="pill fan">${getVal(item.card,item.lb,'fan_bonus')}</span>
+        </div>
+    </div>`).join('');
+    document.querySelectorAll('.rank-card').forEach(el=>{
+        el.ondragstart=e=>{
+            e.dataTransfer.setData('text/plain',el.dataset.key);
+            el.style.opacity='.3';
+        };
+        el.ondragend=e=>{
+            el.style.opacity='1';
+            let rect=poolEl.getBoundingClientRect();
+            if(e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom){
+                let key=el.dataset.key;
+                let [id,lbStr]=key.split('_lb');
+                let card=allCards.find(x=>x.id===id);
+                if(card){
+                    rankPool=rankPool.filter(x=>x.card.title!==card.title);
+                }else{
+                    let lb=parseInt(lbStr);
+                    rankPool=rankPool.filter(x=>!(x.id===id && x.lb===lb));
+                }
+                renderPool();
+                renderCardGrid();
+            }
+        };
+        el.onclick=e=>{
+            e.stopPropagation();
+            let key=el.dataset.key;
+            let [id,lbStr]=key.split('_lb');
+            let card=allCards.find(x=>x.id===id);
+            if(card){
+                rankPool=rankPool.filter(x=>x.card.title!==card.title);
+            }else{
+                let lb=parseInt(lbStr);
+                rankPool=rankPool.filter(x=>!(x.id===id && x.lb===lb));
+            }
+            renderPool();
+            renderCardGrid();
+        };
+    });
 }
 
 let searchTimeout=null;
@@ -380,6 +554,9 @@ document.getElementById('search').oninput=e=>{
 };
 document.getElementById('turnsSlider').oninput=e=>{simTurns=+e.target.value;document.getElementById('turnsValue').textContent=simTurns;renderRaceGrid();};
 document.getElementById('simsSlider').oninput=e=>{simCount=+e.target.value;document.getElementById('simsValue').textContent=simCount;};
+
+document.getElementById('btnClearPool').onclick=()=>{rankPool=[];renderPool();renderCardGrid();};
+document.getElementById('btnClearRank').onclick=()=>{rankPool=[];cardRankings=null;renderPool();renderCardGrid();renderRankSort();};
 
 document.querySelectorAll('.race-grade-btn').forEach(b=>b.onclick=()=>{
     raceGrade=b.dataset.grade;
@@ -544,8 +721,10 @@ document.getElementById('btnSim').onclick=async function(){
     this.textContent='Run Simulation';
 };
 
+document.getElementById('btnClearPool')?.remove();
+
 document.getElementById('btnRank').onclick=async function(){
-    if(deck.length===0)return;
+    if(rankPool.length===0)return;
     this.disabled=true;
     this.textContent='Ranking...';
     
@@ -555,17 +734,10 @@ document.getElementById('btnRank').onclick=async function(){
         let statBonus=bonusIds.map(id=>+document.getElementById(id).value||0);
         let startStats=['startSpd','startSta','startPow','startGut','startWis'].map(id=>+document.getElementById(id).value||88);
         
-        let deckTitles=new Set(deck.map(x=>x.card.title));
-        let candidates=[];
-        for(let c of allCards){
-            if(deckTitles.has(c.title))continue;
-            for(let lb=0; lb<=4; lb++){
-                candidates.push({card_id:c.id, lb:lb});
-            }
-        }
+        let candidates=rankPool.map(i=>({card_id:i.id,lb:i.lb}));
         let total=candidates.length;
         
-        document.getElementById('results').innerHTML=`<div class="results"><h3>Ranking Cards...</h3><div class="progress-container"><div class="progress-bar"><div class="progress-fill" id="pf" style="width:0%"></div></div><div class="progress-text" id="pt">0 / ${total}</div></div></div>`;
+        document.getElementById('results').innerHTML=`<div class="results"><h3>Ranking ${total} Cards...</h3><div class="progress-container"><div class="progress-bar"><div class="progress-fill" id="pf" style="width:0%"></div></div><div class="progress-text" id="pt">0 / ${total}</div></div></div>`;
         
         let res=await fetch('/api/rank_cards',{
             method:'POST',
@@ -598,7 +770,6 @@ document.getElementById('btnRank').onclick=async function(){
                     try{
                         data=JSON.parse(jsonStr);
                     }catch(e){
-                        console.error('JSON parse error:',e,'in:',jsonStr);
                         continue;
                     }
                     if(data.progress!==undefined){
@@ -622,7 +793,6 @@ document.getElementById('btnRank').onclick=async function(){
             results.sort((a,b)=>b.avgScore-a.avgScore);
             cardRankings=results;
             renderRankSort();
-            setTimeout(()=>renderCardGrid(), 10);
             
             document.getElementById('results').innerHTML=`<div class="results">
                 <h3>Card Ranking</h3>
@@ -634,7 +804,7 @@ document.getElementById('btnRank').onclick=async function(){
         }
     }catch(e){document.getElementById('results').innerHTML=`<div style="color:#ef4444;padding:1rem">Error: ${e}</div>`;}
     this.disabled=false;
-    this.textContent='Rank';
+    this.textContent='Rank Pool';
 };
 
 init();
