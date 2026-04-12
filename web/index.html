@@ -239,7 +239,7 @@ h1{font-size:1.5rem;font-weight:900;color:var(--accent)}
         </div>
     </div>
     <script>
-let allCards=[], deck=[], rankPool=[], filterType='all', searchText='';
+let allCards=[], uniqueEffectsData=[], deck=[], rankPool=[], filterType='all', searchText='';
 let simTurns=72, simCount=3333;
 let raceSchedule={}, raceGrade='G1';
 let cardRankings=null;
@@ -250,10 +250,14 @@ const bonusIds=['bonusSpd','bonusSta','bonusPow','bonusGut','bonusWis'];
 
 async function init(){
     try{
-        allCards=await fetch('/api/cards').then(r=>{
-            if(!r.ok)throw new Error('API failed');
+        allCards=await fetch('data/cards.json').then(r=>{
+            if(!r.ok)throw new Error('Failed to load cards');
             return r.json();
         });
+        uniqueEffectsData=await fetch('data/unique_effects.json').then(r=>{
+            if(!r.ok)return [];
+            return r.json();
+        }).catch(()=>[]);
         if(!allCards.length)throw new Error('No cards returned');
         renderFilters();
         renderCards();
@@ -261,7 +265,7 @@ async function init(){
         renderPool();
     }catch(e){
         console.error('Init error:', e);
-        document.getElementById('cardGrid').innerHTML='<p style="color:var(--muted);padding:2rem">Run: python main.py</p>';
+        document.getElementById('cardGrid').innerHTML='<p style="color:var(--muted);padding:2rem">Error loading data. Make sure you\'re running on a server (not file://)</p>';
     }
 }
 
@@ -644,44 +648,42 @@ document.getElementById('btnSim').onclick=async function(){
         let statBonus=bonusIds.map(id=>+document.getElementById(id).value||0);
         let startStats=['startSpd','startSta','startPow','startGut','startWis'].map(id=>+document.getElementById(id).value||88);
         
-        let res=await fetch('/api/simulate',{
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({deck:deckData,num_simulations:simCount,max_turns:simTurns,race_schedule:raceList,stat_bonus:statBonus,starting_stats:startStats})
+        let engine=new SimulationEngine(deckData, allCards, uniqueEffectsData,{
+            numSimulations:simCount,
+            maxTurns:simTurns,
+            raceSchedule:raceList,
+            statBonus:statBonus,
+            startingStats:startStats
         });
         
-        let reader=res.body.getReader(), decoder=new TextDecoder(), result=null, data;
-        let buffer=''; 
-        while(true){
-            let {done,value}=await reader.read();
-            if(done)break;
-            buffer+=decoder.decode(value,{stream:true});
-            let lines=buffer.split('\n');
-            buffer=lines.pop()||'';
-            for(let line of lines){
-                line=line.trim();
-                if(line.startsWith('data:')){
-                    let jsonStr=line.slice(5).trim();
-                    if(!jsonStr)continue;
-                    try{
-                        data=JSON.parse(jsonStr);
-                    }catch(e){
-                        console.error('JSON parse error:',e,'in:',jsonStr);
-                        continue;
-                    }
-                    if(data.progress!==undefined){
-                        let pct=(data.progress/data.total*100).toFixed(1);
-                        document.getElementById('pf').style.width=pct+'%';
-                        document.getElementById('pt').textContent=`${data.progress} / ${data.total} (${pct}%)`;
-                    }
-                    if(data.done)result=data.result;
+        let total=simCount;
+        let chunkSize=Math.ceil(total/100);
+        let result;
+        
+        for(let i=0;i<total;i+=chunkSize){
+            let count=Math.min(chunkSize,total-i);
+            engine.numSimulations=count;
+            let partial=engine.runSimulations();
+            
+            if(i===0){
+                result=partial;
+            }else{
+                for(let j=0;j<5;j++){
+                    result.avg_stats[j]=(result.avg_stats[j]*i+partial.avg_stats[j]*count)/(i+count);
                 }
+                result.avg_skill_points=(result.avg_skill_points*i+partial.avg_skill_points*count)/(i+count);
             }
+            
+            let pct=((i+count)/total*100).toFixed(1);
+            document.getElementById('pf').style.width=pct+'%';
+            document.getElementById('pt').textContent=`${i+count} / ${total} (${pct}%)`;
+            
+            await new Promise(r=>setTimeout(r,0));
         }
         
-        if(result.error){document.getElementById('results').innerHTML=`<div style="color:#ef4444;padding:1rem">${result.error}</div>`;}
-        else{
-            let s=result.avg_stats, d=result.dist_stats, p=result.peak_run;
+        if(!result){throw new Error('Simulation failed');}
+        
+        let s=result.avg_stats, d=result.dist_stats, p=result.peak_run;
             document.getElementById('results').innerHTML=`<div class="results">
                 <div class="view-toggle" style="margin-bottom:1rem">
                     <button class="btn-toggle active" onclick="showView('default',this)">Average</button>
@@ -739,56 +741,37 @@ document.getElementById('btnRank').onclick=async function(){
         
         document.getElementById('results').innerHTML=`<div class="results"><h3>Ranking ${total} Cards...</h3><div class="progress-container"><div class="progress-bar"><div class="progress-fill" id="pf" style="width:0%"></div></div><div class="progress-text" id="pt">0 / ${total}</div></div></div>`;
         
-        let res=await fetch('/api/rank_cards',{
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({
-                candidates:candidates,
-                base_deck:deckData,
-                num_simulations:simCount,
-                max_turns:simTurns,
-                race_schedule:raceList,
-                stat_bonus:statBonus,
-                starting_stats:startStats
-            })
-        });
-        
-        let reader=res.body.getReader(), decoder=new TextDecoder();
-        let rankedData=null, data;
-        let buffer=''; 
-        while(true){
-            let {done,value}=await reader.read();
-            if(done)break;
-            buffer+=decoder.decode(value,{stream:true});
-            let lines=buffer.split('\n');
-            buffer=lines.pop()||'';
-            for(let line of lines){
-                line=line.trim();
-                if(line.startsWith('data:')){
-                    let jsonStr=line.slice(5).trim();
-                    if(!jsonStr)continue;
-                    try{
-                        data=JSON.parse(jsonStr);
-                    }catch(e){
-                        continue;
-                    }
-                    if(data.progress!==undefined){
-                        let pct=(data.progress/total*100).toFixed(1);
-                        document.getElementById('pf').style.width=pct+'%';
-                        document.getElementById('pt').textContent=`${data.progress} / ${total}`;
-                    }
-                    if(data.done)rankedData=data.ranked;
-                }
-            }
+        let rankedResults=[];
+        for(let i=0;i<candidates.length;i++){
+            let cand=candidates[i];
+            let testDeck=[...deckData,cand];
+            let engine=new SimulationEngine(testDeck, allCards, uniqueEffectsData,{
+                numSimulations:simCount,
+                maxTurns:simTurns,
+                raceSchedule:raceList,
+                statBonus:statBonus,
+                startingStats:startStats
+            });
+            let result=engine.runSimulations();
+            rankedResults.push({
+                card_id:cand.card_id,
+                lb:cand.lb,
+                avg_stats:[result.avg_stats[0],result.avg_stats[1],result.avg_stats[2],result.avg_stats[3],result.avg_stats[4]],
+                avg_sp:result.avg_skill_points
+            });
+            
+            let pct=((i+1)/total*100).toFixed(1);
+            document.getElementById('pf').style.width=pct+'%';
+            document.getElementById('pt').textContent=`${i+1} / ${total}`;
+            await new Promise(r=>setTimeout(r,0));
         }
         
-        if(rankedData){
-            let results=rankedData.map(r=>{
-                let c=allCards.find(x=>x.id===r.card_id);
-                let avg=r.avg_stats, avgSp=r.avg_sp;
-                let avgScore=avg[0]+avg[1]+avg[2]+avg[3]+avg[4]+avgSp/2;
-                return {baseId:r.card_id, lb:r.lb, card:c, avgScore, avg, avgSp};
-            });
+        let results=rankedResults.map(r=>{
+            let c=allCards.find(x=>x.id===r.card_id);
+            let avg=r.avg_stats, avgSp=r.avg_sp;
+            let avgScore=avg[0]+avg[1]+avg[2]+avg[3]+avg[4]+avgSp/2;
+            return {baseId:r.card_id, lb:r.lb, card:c, avgScore, avg, avgSp};
+        });
             
             results.sort((a,b)=>b.avgScore-a.avgScore);
             cardRankings=results;
@@ -809,5 +792,6 @@ document.getElementById('btnRank').onclick=async function(){
 
 init();
     </script>
+    <script src="sim.js"></script>
 </body>
 </html>

@@ -1,0 +1,566 @@
+[
+  {
+    "id": "ue_1",
+    "text": "Gain Training Effectiveness (10) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_2",
+    "text": "Gain Skill Point Bonus (2) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_3",
+    "text": "If there are at least 4 different types of support cards in your deck, gain Increased Training (10)"
+  },
+  {
+    "id": "ue_4",
+    "text": "Gain Speed Bonus (1) and Skill Point Bonus (1) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_5",
+    "text": "Gain Stamina Bonus (1) and Skill Point Bonus (1) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_6",
+    "text": "Gain Power Bonus (1) and Skill Point Bonus (1) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_7",
+    "text": "Gain Power Bonus (1) and Hint Quantity Bonus (1) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_8",
+    "text": "Gain Power Bonus (1) and Training Effectiveness (5) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_9",
+    "text": "Gain Stamina Bonus (2) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_10",
+    "text": "Gain Power Bonus (2) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_11",
+    "text": "Gain Friendship Bonus (10) and Power Bonus (1) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_12",
+    "text": "Gain Mood Effect (15) and Speed Bonus (1) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_13",
+    "text": "Gain Wit Bonus (1) and Skill Point Bonus (1) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_14",
+    "text": "Gain Guts Bonus (1) and Skill Point Bonus (1) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_15",
+    "text": "Gain Power Bonus (1) and Skill Point Bonus (1) when the bond gauge is at least 60"
+  },
+  {
+    "id": "ue_16",
+    "text": "Gain Speed Bonus (1) and Power Bonus (1) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_17",
+    "text": "Gain Training Effectiveness (5) and Energy Cost Reduction (5) when the bond gauge is at least 60"
+  },
+  {
+    "id": "ue_18",
+    "text": "Gain Speed Bonus (2) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_19",
+    "text": "Gain Friendship Bonus (20) when the bond gauge is full"
+  },
+  {
+    "id": "ue_20",
+    "text": "Gain Wit Bonus (2) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_21",
+    "text": "Gain Speed Bonus (1) and Wit Bonus (1) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_22",
+    "text": "Supports that train together with this one gain Specialty Priority (60) for the next turn Event Recovery60% Increases Energy recovery from this Support Card's events Energy Cost Reduction20% Decreases Energy consumed when training together"
+  },
+  {
+    "id": "ue_23",
+    "text": "Gain Guts Bonus (2) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_24",
+    "text": "When the bond gauge is 80 or higher, gain Stat Bonus, where Stat is the type of the card, for every card in your support deck (up to 2 per Stat); Friends and Groups give skill points"
+  },
+  {
+    "id": "ue_25",
+    "text": "Gain Stamina Bonus (1) and Guts Bonus (1) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_26",
+    "text": "Gain Mood Effect (60) when participating in a friendship (rainbow) training"
+  },
+  {
+    "id": "ue_27",
+    "text": "Gain Stamina Bonus (1) and Power Bonus (1) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_28",
+    "text": "Gain Speed Bonus (2) and Skill Point Bonus (1) when the bond gauge is full"
+  },
+  {
+    "id": "ue_29",
+    "text": "Gain Skill Point Bonus (1) and All Stats Bonus (1) when the bond gauge is full"
+  },
+  {
+    "id": "ue_30",
+    "text": "Gain Stamina Bonus (2) and Guts Bonus (1) when the bond gauge is full"
+  },
+  {
+    "id": "ue_31",
+    "text": "Gain Speed Bonus (1) and Guts Bonus (1) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_32",
+    "text": "The more energy you have, the more Training Effectiveness you'll gain"
+  },
+  {
+    "id": "ue_33",
+    "text": "Gain Training Effectiveness (4) for every Speed-increasing skill, up to (20) for 5 skills"
+  },
+  {
+    "id": "ue_34",
+    "text": "Increases initial Power when beginning a Career playthrough (20) Increases skill point gain when training together (1)"
+  },
+  {
+    "id": "ue_35",
+    "text": "Gain Wit Bonus (1) for every Speed-increasing skill, up to (3) for 3 skills"
+  },
+  {
+    "id": "ue_36",
+    "text": "Gain Speed Bonus (3) when the bond gauge is full"
+  },
+  {
+    "id": "ue_37",
+    "text": "The higher the total bond of all your supports is, the higher Training Effectiveness you'll gain"
+  },
+  {
+    "id": "ue_38",
+    "text": "Gain Stamina Bonus (1) and Guts Bonus (2) when the bond gauge is full"
+  },
+  {
+    "id": "ue_39",
+    "text": "All supports get 1 bonus bond from training; 2 if they're in the same facility as this card Event Recovery80% Increases Energy recovery from this Support Card's events"
+  },
+  {
+    "id": "ue_40",
+    "text": "Gain Friendship Bonus (10) and Mood Effect (15) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_41",
+    "text": "Gain Speed Bonus (1) for every Speed-increasing skill, up to (3) for 3 skills"
+  },
+  {
+    "id": "ue_42",
+    "text": "Gain Training Effectiveness (15) when participating in a friendship (rainbow) training"
+  },
+  {
+    "id": "ue_43",
+    "text": "When the bond gauge is 60 or higher, all support cards in your deck are more likely to appear in training facilities"
+  },
+  {
+    "id": "ue_44",
+    "text": "Gain Energy Cost Reduction (30) when participating in a friendship (rainbow) training"
+  },
+  {
+    "id": "ue_45",
+    "text": "Gain Friendship Bonus (10) and Skill Point Bonus (1) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_46",
+    "text": "Gain Specialty Priority (40) when the bond gauge is at least 80"
+  },
+  {
+    "id": "ue_47",
+    "text": "Gain Power Bonus (1) for every undefined skill, up to (3) for 3 skills"
+  },
+  {
+    "id": "ue_48",
+    "text": "Gain Stamina Bonus (3) when the bond gauge is full"
+  },
+  {
+    "id": "ue_49",
+    "text": "Increases Power gain when training together (1) Increases stat gain from races (5%)"
+  },
+  {
+    "id": "ue_50",
+    "text": "When the bond gauge is 60 or higher, this support can appear in 2 training facilities at once"
+  },
+  {
+    "id": "ue_51",
+    "text": "Gain Training Effectiveness (5) for every Speed-increasing skill, up to (15) for 3 skills"
+  },
+  {
+    "id": "ue_52",
+    "text": "Gain Wit Bonus (2) and Skill Point Bonus (1) when the bond gauge is full"
+  },
+  {
+    "id": "ue_53",
+    "text": "Gain Guts Bonus (3) when the bond gauge is full"
+  },
+  {
+    "id": "ue_54",
+    "text": "Gain Speed Bonus (1) for every Recovery skill, up to (3) for 3 skills"
+  },
+  {
+    "id": "ue_55",
+    "text": "Gain Stamina Bonus (1) for every Recovery skill, up to (3) for 3 skills"
+  },
+  {
+    "id": "ue_56",
+    "text": "All support cards gain Initial Friendship Gauge (5)"
+  },
+  {
+    "id": "ue_57",
+    "text": "Increases Power gain when training together (1) Increases initial Friendship Gauge when beginning a Career playthrough (15)"
+  },
+  {
+    "id": "ue_58",
+    "text": "Gain Power Bonus (3) when the bond gauge is full"
+  },
+  {
+    "id": "ue_59",
+    "text": "Gain Initial Stat Up (10), where Stat is the type of the card, for every card in your support deck (Friend and Group types give (2) to every stat)"
+  },
+  {
+    "id": "ue_60",
+    "text": "The higher the combined facility level, the higher Training Effectiveness you'll gain (up to 20)"
+  },
+  {
+    "id": "ue_61",
+    "text": "Gain Friendship Bonus (10) and Mood Effect (15) when the bond gauge is full Gain Skill Point Bonus (1) when the bond gauge is full"
+  },
+  {
+    "id": "ue_62",
+    "text": "Gain Training Effectiveness (5) per every level of the current training facility"
+  },
+  {
+    "id": "ue_63",
+    "text": "Gain Training Effectiveness (15) when the bond gauge is full"
+  },
+  {
+    "id": "ue_64",
+    "text": "The more maximum energy you have, the higher Training Effectiveness you'll gain"
+  },
+  {
+    "id": "ue_65",
+    "text": "Gain Training Effectiveness (5) for every support card in the same training facility"
+  },
+  {
+    "id": "ue_66",
+    "text": "Increases Guts gain when training together (1) Increases stat gain from races (5%)"
+  },
+  {
+    "id": "ue_67",
+    "text": "Gain Friendship Bonus (3) every time you do friendship training with this card, up to 5 times for a total of (15)"
+  },
+  {
+    "id": "ue_68",
+    "text": "Increases skill point gain when training together (1)"
+  },
+  {
+    "id": "ue_69",
+    "text": "If there are at least 5 different types of support cards in your deck, gain Increased Training (15)"
+  },
+  {
+    "id": "ue_70",
+    "text": "Amplifies the effect of mood when training together (15%) Increases stat gain from races (5%)"
+  },
+  {
+    "id": "ue_71",
+    "text": "20% chance to make the current training fail rate zero"
+  },
+  {
+    "id": "ue_72",
+    "text": "Increases the effectiveness of training performed together (5%) Increases the frequency at which hint events occur (20%)"
+  },
+  {
+    "id": "ue_73",
+    "text": "The less energy you have, the more Friendship Bonus you'll gain"
+  },
+  {
+    "id": "ue_74",
+    "text": "Gain Mood Effect (60) when the bond gauge is full"
+  },
+  {
+    "id": "ue_75",
+    "text": "Gain Wit Friendship Recovery (5) when the bond gauge is full"
+  },
+  {
+    "id": "ue_76",
+    "text": "Sasami Anshinzawa random events are more likely to occur"
+  },
+  {
+    "id": "ue_77",
+    "text": "Amplifies the effect of mood when training together (15%) Increases initial Friendship Gauge when beginning a Career playthrough (15)"
+  },
+  {
+    "id": "ue_78",
+    "text": "Increases the effectiveness of training performed together (5%) Increases initial Speed when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_79",
+    "text": "Increases the effectiveness of training performed together (5%) Increases stat gain from races (5%)"
+  },
+  {
+    "id": "ue_80",
+    "text": "Increases Wit gain when training together (1) Increases stat gain from races (5%)"
+  },
+  {
+    "id": "ue_81",
+    "text": "Amplifies the effect of mood when training together (15%) Decreases the probability of failure when training together (10%)"
+  },
+  {
+    "id": "ue_82",
+    "text": "Increases the effectiveness of Friendship Training (10%) Increases stat gain from races (5%)"
+  },
+  {
+    "id": "ue_83",
+    "text": "Gain Increased Training (1) per 10000 fans, up to (20) for 200000 fans"
+  },
+  {
+    "id": "ue_84",
+    "text": "Increases the effectiveness of Friendship Training (10%) Increases initial Friendship Gauge when beginning a Career playthrough (15)"
+  },
+  {
+    "id": "ue_85",
+    "text": "When the bond gauge is 80 or higher and this card is in a facility different from its type, gain Increased Training (20)"
+  },
+  {
+    "id": "ue_86",
+    "text": "Gain Wit Bonus (3) when the bond gauge is full"
+  },
+  {
+    "id": "ue_87",
+    "text": "Increases the effectiveness of training performed together (5%) Increases initial Stamina when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_88",
+    "text": "Increases Speed gain when training together (1) Increases initial Guts when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_89",
+    "text": "Increases the effectiveness of Friendship Training (10%) Increases Stamina gain when training together (1)"
+  },
+  {
+    "id": "ue_90",
+    "text": "Increases the effectiveness of Friendship Training (10%) Increases the effectiveness of training performed together (5%)"
+  },
+  {
+    "id": "ue_91",
+    "text": "Increases the effectiveness of training performed together (5%) Increases the frequency at which the character participates in their preferred training type (20)"
+  },
+  {
+    "id": "ue_92",
+    "text": "Increases Speed gain when training together (1) Increases the frequency at which the character participates in their preferred training type (20)"
+  },
+  {
+    "id": "ue_93",
+    "text": "Amplifies the effect of mood when training together (15%) Increases Stamina gain when training together (1)"
+  },
+  {
+    "id": "ue_94",
+    "text": "Increases the effectiveness of Friendship Training (10%) Increases the frequency at which the character participates in their preferred training type (20)"
+  },
+  {
+    "id": "ue_95",
+    "text": "Increases Wit gain when training together (1) Increases initial Friendship Gauge when beginning a Career playthrough (15)"
+  },
+  {
+    "id": "ue_96",
+    "text": "Increases Power gain when training together (1) Increases skill point gain when training together (1)"
+  },
+  {
+    "id": "ue_97",
+    "text": "Increases the effectiveness of Friendship Training (10%) Increases Guts gain when training together (1)"
+  },
+  {
+    "id": "ue_98",
+    "text": "Increases Speed gain when training together (1) Increases initial Speed when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_99",
+    "text": "Increases Speed gain when training together (1) Increases initial Wit when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_100",
+    "text": "Increases Stamina gain when training together (1) Increases the frequency at which hint events occur (20%)"
+  },
+  {
+    "id": "ue_101",
+    "text": "Increases the effectiveness of Friendship Training (10%) Increases Speed gain when training together (1)"
+  },
+  {
+    "id": "ue_102",
+    "text": "Increases Stamina gain when training together (1) Increases the effectiveness of training performed together (5%)"
+  },
+  {
+    "id": "ue_103",
+    "text": "Increases the effectiveness of training performed together (5%) Increases initial Power when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_104",
+    "text": "Increases Power gain when training together (1) Increases the frequency at which hint events occur (20%)"
+  },
+  {
+    "id": "ue_105",
+    "text": "Amplifies the effect of mood when training together (15%) Increases the frequency at which the character participates in their preferred training type (20)"
+  },
+  {
+    "id": "ue_106",
+    "text": "Decreases the probability of failure when training together (10%) Decreases Energy consumed when training together (5%)"
+  },
+  {
+    "id": "ue_107",
+    "text": "Increases the effectiveness of Friendship Training (10%) Increases initial Guts when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_108",
+    "text": "Amplifies the effect of mood when training together (15%) Increases the frequency at which hint events occur (20%)"
+  },
+  {
+    "id": "ue_109",
+    "text": "Increases Power gain when training together (1) Increases initial Power when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_110",
+    "text": "Increases Guts gain when training together (1) Increases initial Guts when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_111",
+    "text": "Increases the effectiveness of training performed together (5%) Increases initial Friendship Gauge when beginning a Career playthrough (15)"
+  },
+  {
+    "id": "ue_112",
+    "text": "Increases the effectiveness of Friendship Training (10%) Increases the frequency at which hint events occur (20%)"
+  },
+  {
+    "id": "ue_113",
+    "text": "Increases the effectiveness of training performed together (5%) Increases initial Wit when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_114",
+    "text": "Increases Stamina gain when training together (1) Increases the frequency at which the character participates in their preferred training type (20)"
+  },
+  {
+    "id": "ue_115",
+    "text": "Increases the effectiveness of training performed together (5%) Increases initial Guts when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_116",
+    "text": "Increases the effectiveness of Friendship Training (10%) Increases initial Speed when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_117",
+    "text": "Increases Stamina gain when training together (1) Increases initial Stamina when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_118",
+    "text": "Increases Guts gain when training together (1) Increases the effectiveness of training performed together (5%)"
+  },
+  {
+    "id": "ue_119",
+    "text": "Increases skill point gain when training together (1) Increases initial Friendship Gauge when beginning a Career playthrough (15)"
+  },
+  {
+    "id": "ue_120",
+    "text": "Increases Wit gain when training together (1) Increases the frequency at which the character participates in their preferred training type (20)"
+  },
+  {
+    "id": "ue_121",
+    "text": "Increases Power gain when training together (1) Amplifies the effect of mood when training together (15%)"
+  },
+  {
+    "id": "ue_122",
+    "text": "Increases skill point gain when training together (1) Increases initial Wit when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_123",
+    "text": "Increases Stamina gain when training together (1) Increases initial Guts when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_124",
+    "text": "Increases Stamina gain when training together (1) Increases initial Power when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_125",
+    "text": "Increases skill point gain when training together (1) Increases the effectiveness of training performed together (5%)"
+  },
+  {
+    "id": "ue_126",
+    "text": "Increases skill point gain when training together (1) Increases initial Stamina when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_127",
+    "text": "Increases skill point gain when training together (1) Increases initial Speed when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_128",
+    "text": "Increases the effectiveness of Friendship Training (10%) Increases initial Wit when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_129",
+    "text": "Increases the effectiveness of Friendship Training (10%) Increases skill point gain when training together (1)"
+  },
+  {
+    "id": "ue_130",
+    "text": "Amplifies the effect of mood when training together (15%) Increases initial Power when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_131",
+    "text": "Increases Power gain when training together (1) Increases the effectiveness of training performed together (5%)"
+  },
+  {
+    "id": "ue_132",
+    "text": "Increases the effectiveness of training performed together (5%) Increases skill point gain when training together (1)"
+  },
+  {
+    "id": "ue_133",
+    "text": "Increases initial Stamina when beginning a Career playthrough (20) Increases skill point gain when training together (1)"
+  },
+  {
+    "id": "ue_134",
+    "text": "Increases Speed gain when training together (1) Increases stat gain from races (5%)"
+  },
+  {
+    "id": "ue_135",
+    "text": "Increases skill point gain when training together (1) Increases initial Guts when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_136",
+    "text": "Increases initial Stamina when beginning a Career playthrough (20) Increases initial Guts when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_137",
+    "text": "Increases the effectiveness of Friendship Training (10%) Increases initial Stamina when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_138",
+    "text": "Increases skill point gain when training together (1) Increases the frequency at which hint events occur (20%)"
+  },
+  {
+    "id": "ue_139",
+    "text": "Amplifies the effect of mood when training together (15%) Increases initial Wit when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_140",
+    "text": "Increases the effectiveness of Friendship Training (10%) Increases initial Power when beginning a Career playthrough (20)"
+  },
+  {
+    "id": "ue_141",
+    "text": "Amplifies the effect of mood when training together (15%) Increases initial Guts when beginning a Career playthrough (20)"
+  }
+]
