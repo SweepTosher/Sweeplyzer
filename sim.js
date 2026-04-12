@@ -1444,7 +1444,7 @@ class SimulationEngine {
 
 function runSimulation(deckData, numSimulations = 11, maxTurns = 72, raceSchedule = [],
                        statBonus = [0, 0, 0, 0, 0], startingStats = [88, 88, 88, 88, 88]) {
-    numSimulations = Math.min(1111, Math.max(1, numSimulations));
+    numSimulations = Math.min(3333, Math.max(1, numSimulations));
     maxTurns = Math.min(78, Math.max(20, maxTurns));
 
     const engine = new SimulationEngine(deckData, [], [], {
