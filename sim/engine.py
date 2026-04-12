@@ -39,7 +39,9 @@ class SimulationEngine:
                  stat_bonus: List[int] = None,
                  starting_stats: List[int] = None,
                  card_filepath: str = 'data/cards.json',
-                 unique_effects_filepath: str = 'data/unique_effects.json'):
+                 unique_effects_filepath: str = 'data/unique_effects.json',
+                 raw_cards_data: list = None,
+                 preloaded_unique_effects: dict = None):
         self.num_simulations = num_simulations
         self.max_turns = max_turns
         self.race_schedule = race_schedule or []
@@ -49,10 +51,14 @@ class SimulationEngine:
         self.race_turns = {r['turn']: r.get('grade', 'G3') for r in self.race_schedule}
 
         import json
-        with open(card_filepath, encoding='utf-8') as f:
-            raw_cards_data = json.load(f)
+        if raw_cards_data is None:
+            with open(card_filepath, encoding='utf-8') as f:
+                raw_cards_data = json.load(f)
 
-        self.unique_effects = load_unique_effects(unique_effects_filepath)
+        if preloaded_unique_effects is not None:
+            self.unique_effects = preloaded_unique_effects
+        else:
+            self.unique_effects = load_unique_effects(unique_effects_filepath)
 
         self.deck_cards: List[SupportCard] = []
         for item in deck_data:
@@ -212,15 +218,17 @@ class SimulationEngine:
             if state.turn < 72:
                 if random.random() < 0.35:
                     events_triggered += 1
-                    card = random.randint(0, min(5, len(self.deck_cards) - 1))
-                    stat = random.randint(0, 4)
-                    state.add_status(stat, 20)
-                    state.add_skill_pt(20)
-                    state.add_friendship(card, 5)
-                    if random.random() < 0.5:
-                        state.add_vital(10)
-                    if random.random() < 0.4 * (1.0 - state.turn / TOTAL_TURN):
-                        state.add_motivation(1)
+                    card_idx = len(self.deck_cards) - 1
+                    if card_idx >= 0:
+                        card = random.randint(0, card_idx)
+                        stat = random.randint(0, 4)
+                        state.add_status(stat, 20)
+                        state.add_skill_pt(20)
+                        state.add_friendship(card, 5)
+                        if random.random() < 0.5:
+                            state.add_vital(10)
+                        if random.random() < 0.4 * (1.0 - state.turn / TOTAL_TURN):
+                            state.add_motivation(1)
 
                 if random.random() < 0.10:
                     for i in range(5):

@@ -14,13 +14,14 @@ body{background:var(--bg);color:var(--text);font-family:Inter,'Segoe UI',system-
 h1{font-size:1.5rem;font-weight:900;color:var(--accent)}
 .search{background:var(--surface);border:2px solid rgba(255,255,255,.1);border-radius:8px;padding:.6rem 1rem;color:var(--text);font-size:.95rem;width:100%;margin-bottom:1rem}
 .search:focus{outline:none;border-color:var(--accent)}
-.card{background:var(--surface);border:2px solid rgba(255,255,255,.1);border-radius:10px;padding:.75rem;cursor:pointer}
+.card{background:var(--surface);border:2px solid rgba(255,255,255,.1);border-radius:10px;padding:.75rem;cursor:pointer;position:relative}
 .card:hover{border-color:var(--accent);box-shadow:0 0 20px rgba(69,194,229,.3)}
 .card.selected{border-color:#22c55e}
 .card.greyed{opacity:.4;pointer-events:none}
 .card img{width:100%;aspect-ratio:1;object-fit:contain;background:#000;border-radius:8px}
 .card-title{font-size:.9rem;margin-top:.5rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;color:var(--accent)}
 .card-type{font-size:.7rem;color:var(--muted);text-transform:uppercase;margin-top:.15rem}
+.card-lb{position:absolute;top:5px;left:5px;background:#8b5cf6;color:#fff;font-size:.65rem;font-weight:900;padding:2px 6px;border-radius:4px}
 .card-stats{display:flex;gap:.4rem;margin-top:.4rem}
 .pill{font-size:.8rem;padding:.2rem .5rem;border-radius:4px;font-weight:700}
 .pill.race{color:#f59e0b}
@@ -50,14 +51,20 @@ h1{font-size:1.5rem;font-weight:900;color:var(--accent)}
 .filter-btn.active{background:var(--accent);border-color:var(--accent);color:#000}
 #cardGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.75rem}
 .filters{display:flex;gap:.4rem;margin-bottom:.5rem;flex-wrap:wrap}
+.rank-sort{display:flex;gap:.4rem;margin-bottom:.5rem}
+.rank-sort-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:.3rem .6rem;color:var(--text);font-size:.75rem;cursor:pointer}
+.rank-sort-btn:hover{border-color:var(--accent)}
+.rank-sort-btn.active{background:var(--accent);border-color:var(--accent);color:#000}
 .sim-panel{margin-top:1rem;padding-top:.75rem;border-top:2px solid rgba(255,255,255,.1)}
-.sim-row{display:flex;justify-content:space-between;align-items:center;padding:.4rem 0}
-.sim-label{color:var(--muted);font-size:.85rem}
-.sim-value{color:var(--accent);font-weight:700}
-input[type="range"]{width:120px;margin:0 .5rem}
+.sim-row{display:flex;align-items:center;gap:.5rem;padding:.3rem 0}
+.sim-label{color:var(--muted);font-size:.85rem;min-width:6rem}
+.sim-value{color:var(--accent);font-weight:700;min-width:3rem;text-align:right}
+.sim-row input[type="range"]{flex:1}
 .btn-sim{background:var(--accent);color:#000;border:none;padding:.6rem 1.5rem;border-radius:6px;font-weight:700;cursor:pointer;font-size:1rem;width:100%;margin-top:.5rem}
 .btn-sim:hover{opacity:.9}
 .btn-sim:disabled{opacity:.5;cursor:not-allowed}
+.btn-rank{background:#8b5cf6;color:#fff;border:none;padding:.6rem 1.5rem;border-radius:6px;font-weight:700;cursor:pointer;font-size:1rem;width:100%;margin-top:.5rem}
+.btn-rank:hover{opacity:.9}
 .results{margin-top:1rem;padding:.75rem;background:rgba(0,0,0,.3);border-radius:8px}
 .results h3{font-size:.9rem;color:var(--accent);margin-bottom:.5rem}
 .result-row{display:flex;justify-content:space-between;padding:.2rem 0;font-size:.85rem}
@@ -111,6 +118,7 @@ input[type="range"]{width:120px;margin:0 .5rem}
 .dist-dot.iqr{background:rgba(69,194,229,.4)}
 .dist-avg-val{color:#22c55e;font-weight:700;margin-left:auto}
 .dist-cursor-tooltip{position:absolute;top:-22px;transform:translateX(-50%);background:var(--accent);color:#000;padding:2px 6px;border-radius:3px;font-size:.65rem;font-weight:700;display:none;white-space:nowrap}
+.rank-badge{position:absolute;top:5px;right:5px;background:var(--accent);color:#000;font-size:.65rem;font-weight:900;padding:2px 6px;border-radius:4px;box-shadow:0 2px 4px rgba(0,0,0,.3);z-index:10}
 .progress-container{margin-top:.75rem}
 .progress-bar{height:1.5rem;background:rgba(255,255,255,.1);border-radius:6px;overflow:hidden}
 .progress-fill{height:100%;background:var(--accent);width:0;transition:width .1s ease}
@@ -119,17 +127,14 @@ input[type="range"]{width:120px;margin:0 .5rem}
 </head>
 <body>
     <div class="container-fluid px-4 py-3">
-        <header class="d-flex justify-content-between align-items-center mb-3 pb-2" style="border-bottom:2px solid rgba(255,255,255,.1)">
+        <header class="mb-3 pb-2" style="border-bottom:2px solid rgba(255,255,255,.1)">
             <h1>Sweeplyzer</h1>
-            <div class="d-flex align-items-center gap-3" style="font-size:1.1rem;font-weight:700;color:var(--accent)">
-                <span style="font-size:1.1rem;font-weight:900;margin-right:.75rem">LB</span>
-                <div id="lbSelector"></div>
-            </div>
         </header>
         <div class="row">
             <div class="col-12 col-lg-9">
                 <input type="text" class="search" id="search" placeholder="Search...">
                 <div class="filters" id="filters"></div>
+                <div class="rank-sort" id="rankSort" style="display:none;margin-bottom:.5rem"></div>
                 <div id="cardGrid"></div>
             </div>
             <div class="col-12 col-lg-3">
@@ -142,14 +147,14 @@ input[type="range"]{width:120px;margin:0 .5rem}
                         <div class="sim-row">
                             <span class="sim-label">Training Days</span>
                             <span class="sim-value" id="turnsValue">72</span>
+                            <input type="range" id="turnsSlider" min="20" max="78" value="72">
                         </div>
-                        <input type="range" id="turnsSlider" min="20" max="78" value="72">
                         
                         <div class="sim-row">
                             <span class="sim-label">Simulations</span>
                             <span class="sim-value" id="simsValue">1111</span>
+                            <input type="range" id="simsSlider" min="1" max="1111" value="1111">
                         </div>
-                        <input type="range" id="simsSlider" min="1" max="1111" value="1111">
                         
                         <div style="margin-top:.75rem;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.1)">
                             <div class="sim-row"><span class="sim-label">Stat Bonus</span><span class="sim-value" id="bonusTotal">30%</span></div>
@@ -187,6 +192,7 @@ input[type="range"]{width:120px;margin:0 .5rem}
                         </div>
                         
                         <button class="btn-sim" id="btnSim" disabled>Run Simulation</button>
+                        <button class="btn-rank" id="btnRank" style="display:none">Rank</button>
                     </div>
                     
                     <div id="results"></div>
@@ -195,9 +201,11 @@ input[type="range"]{width:120px;margin:0 .5rem}
         </div>
     </div>
     <script>
-let allCards=[], deck=[], filterType='all', lbLevel=4, searchText='';
+let allCards=[], deck=[], filterType='all', searchText='';
 let simTurns=72, simCount=1111;
 let raceSchedule={}, raceGrade='G1';
+let cardRankings=null;
+let cardElementMap=null;
 const SUMMER=new Set([37,38,39,40,61,62,63,64]);
 const NO_IMG='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect fill=%27%23111%27 width=%27100%27 height=%27100%27/%3E%3C/svg%3E';
 const bonusIds=['bonusSpd','bonusSta','bonusPow','bonusGut','bonusWis'];
@@ -205,7 +213,6 @@ const bonusIds=['bonusSpd','bonusSta','bonusPow','bonusGut','bonusWis'];
 async function init(){
     try{
         allCards=await fetch('/api/cards').then(r=>r.json());
-        renderLB();
         renderFilters();
         renderCards();
         renderDeck();
@@ -215,16 +222,6 @@ async function init(){
 }
 
 function getVal(card,l,k){return ((card.effects||[])[l]||{})[k]||0;}
-
-function renderLB(){
-    document.getElementById('lbSelector').innerHTML=[0,1,2,3,4].map(i=>`<button class="lb-btn ${i===lbLevel?'active':''}" data-lb="${i}">${i}</button>`).join('');
-    document.querySelectorAll('#lbSelector .lb-btn').forEach(b=>b.onclick=()=>{
-        lbLevel=+b.dataset.lb;
-        document.querySelectorAll('#lbSelector .lb-btn').forEach(x=>x.classList.remove('active'));
-        b.classList.add('active');
-        updateCardStats();
-    });
-}
 
 function renderFilters(){
     const types=['all','speed','stamina','power','guts','wisdom','friend','group'];
@@ -237,21 +234,48 @@ function renderFilters(){
     });
 }
 
+function renderRankSort(){
+    const container=document.getElementById('rankSort');
+    if(!cardRankings){
+        container.style.display='none';
+        return;
+    }
+    container.style.display='flex';
+    container.innerHTML='';
+    renderCardGrid();
+}
+
 function renderCards(){
-    document.getElementById('cardGrid').innerHTML=allCards.map(c=>`<div class="card" data-id="${c.id}">
-        <img src="${c.image_url}" onerror="this.src='${NO_IMG}'" loading="eager">
-        <div class="card-title">${c.title}</div>
-        <div class="card-type">${c.type||''}</div>
-        <div class="card-stats">
-            <span class="pill race">${getVal(c,lbLevel,'race_bonus')}</span>
-            <span class="pill fan">${getVal(c,lbLevel,'fan_bonus')}</span>
-        </div>
-    </div>`).join('');
+    let cardsHTML='';
+    for(let c of allCards){
+        for(let lb=4; lb>=0; lb--){
+            let cardId=c.id+'_lb'+lb;
+            cardsHTML+=`<div class="card" data-id="${cardId}" data-base-id="${c.id}" data-lb="${lb}">
+                <img src="${c.image_url}" onerror="this.src='${NO_IMG}'" loading="eager">
+                <div class="card-title">${c.title}</div>
+                <div class="card-lb">LB${lb}</div>
+                <div class="card-type">${c.type||''}</div>
+                <div class="card-stats">
+                    <span class="pill race">${getVal(c,lb,'race_bonus')}</span>
+                    <span class="pill fan">${getVal(c,lb,'fan_bonus')}</span>
+                </div>
+            </div>`;
+        }
+    }
+    document.getElementById('cardGrid').innerHTML=cardsHTML;
+    
+    // Build element cache map for fast lookups
+    cardElementMap=new Map();
+    document.querySelectorAll('.card').forEach(el=>{
+        cardElementMap.set(el.dataset.id, el);
+    });
+    
     document.querySelectorAll('.card').forEach(el=>el.onclick=()=>{
-        let id=el.dataset.id, card=allCards.find(x=>x.id===id);
-        let idx=deck.findIndex(x=>x.id===id);
+        let baseId=el.dataset.baseId, lb=+el.dataset.lb, card=allCards.find(x=>x.id===baseId);
+        let idx=deck.findIndex(x=>x.id===baseId && x.lb===lb);
         if(idx>=0)deck.splice(idx,1);
-        else if(deck.length<6)deck.push({id:card.id,card,lb:lbLevel});
+        else if(deck.length<6)deck.push({id:baseId,card,lb});
+        cardRankings=null;
         renderCardGrid();
         renderDeck();
     });
@@ -259,53 +283,89 @@ function renderCards(){
 }
 
 function renderCardGrid(){
-    let list=allCards.filter(x=>filterType==='all'||x.type===filterType);
-    if(searchText)list=list.filter(x=>x.title.toLowerCase().includes(searchText.toLowerCase()));
-    let selected=new Set(deck.map(x=>x.card.title));
-    document.querySelectorAll('.card').forEach(el=>{
-        let c=allCards.find(x=>x.id===el.dataset.id);
-        el.classList.toggle('selected',deck.some(x=>x.id===c.id));
-        el.classList.toggle('greyed',selected.has(c.title)&&!deck.some(x=>x.id===c.id));
+    let baseFiltered=allCards.filter(x=>filterType==='all'||x.type===filterType);
+    if(searchText)baseFiltered=baseFiltered.filter(x=>x.title.toLowerCase().includes(searchText.toLowerCase()));
+    
+    let deckTitles=new Set(deck.map(x=>x.card.title));
+    let deckCards=deck.map(x=>x.id+'_lb'+x.lb);
+    let deckSet=new Set(deckCards);
+    
+    let list=[];
+    for(let c of baseFiltered){
+        for(let lb=4; lb>=0; lb--){
+            list.push({baseId:c.id, card:c, lb});
+        }
+    }
+    
+    let selectedCards=list.filter(i=>deckSet.has(i.baseId+'_lb'+i.lb));
+    let otherCards=list.filter(i=>!deckSet.has(i.baseId+'_lb'+i.lb) && !deckTitles.has(i.card.title));
+    
+    let rankMap=null;
+    if(cardRankings){
+        let sorted=[...cardRankings].sort((a,b)=>b.avgScore-a.avgScore);
+        rankMap=new Map();
+        sorted.forEach((r,i)=>rankMap.set(r.baseId+'_lb'+r.lb,i));
+        
+        otherCards.sort((a,b)=>{
+            let aRank=rankMap.get(a.baseId+'_lb'+a.lb);
+            let bRank=rankMap.get(b.baseId+'_lb'+b.lb);
+            if(aRank===undefined)return 1;
+            if(bRank===undefined)return -1;
+            return aRank-bRank;
+        });
+    }
+    
+    list=[...selectedCards,...otherCards];
+    
+    let grid=document.getElementById('cardGrid');
+    list.forEach(i=>{
+        let el=cardElementMap.get(i.baseId+'_lb'+i.lb);
+        if(el)grid.appendChild(el);
     });
-    document.querySelectorAll('.card').forEach(el=>el.style.display='none');
-    list.forEach(c=>{let el=document.querySelector(`.card[data-id="${c.id}"]`);if(el)el.style.display='block';});
-}
-
-function updateCardStats(){
-    document.querySelectorAll('.card').forEach(el=>{
-        let c=allCards.find(x=>x.id===el.dataset.id);
-        el.querySelector('.pill.race').textContent=getVal(c,lbLevel,'race_bonus');
-        el.querySelector('.pill.fan').textContent=getVal(c,lbLevel,'fan_bonus');
+    
+    cardElementMap.forEach(el=>{
+        let baseId=el.dataset.baseId, lb=+el.dataset.lb, c=allCards.find(x=>x.id===baseId);
+        let inDeck=deckSet.has(baseId+'_lb'+lb);
+        el.classList.toggle('selected',inDeck);
+        el.style.display='none';
+        
+        if(cardRankings && !inDeck){
+            let existingBadge=el.querySelector('.rank-badge');
+            if(existingBadge)existingBadge.remove();
+            let rank=rankMap?rankMap.get(baseId+'_lb'+lb):null;
+            if(rank!==null && rank!==undefined){
+                let badge=document.createElement('div');
+                badge.className='rank-badge';
+                badge.textContent=`#${rank+1}`;
+                el.appendChild(badge);
+            }
+        }
     });
+    
+    list.forEach(i=>{let el=cardElementMap.get(i.baseId+'_lb'+i.lb);if(el)el.style.display='block';});
 }
 
 function renderDeck(){
     document.getElementById('deckCount').textContent=deck.length;
     document.getElementById('btnSim').disabled=deck.length===0;
+    document.getElementById('btnRank').style.display=deck.length>0&&deck.length<6?'block':'none';
     if(!deck.length){document.getElementById('deckList').innerHTML='';document.getElementById('stats').innerHTML='';return;}
     document.getElementById('deckList').innerHTML=deck.map((item,idx)=>`<div class="deck-card">
         <img src="${item.card.image_url}" onerror="this.src='${NO_IMG}'">
         <div class="deck-card-info">
-            <div class="deck-card-name">${item.card.title}</div>
+            <div class="deck-card-name">${item.card.title} <span style="color:var(--accent)">LB${item.lb}</span></div>
             <div class="deck-card-stats">
                 <span class="race">${getVal(item.card,item.lb,'race_bonus')}</span> / 
                 <span class="fan">${getVal(item.card,item.lb,'fan_bonus')}</span>
             </div>
-            <div class="lb-selector">
-                ${[0,1,2,3,4].map(lb=>`<button class="lb-btn ${lb===item.lb?'active':''}" data-idx="${idx}" data-lb="${lb}">${lb}</button>`).join('')}
-            </div>
         </div>
-        <button class="btn-remove" data-id="${item.id}">x</button>
+        <button class="btn-remove" data-key="${item.id}_lb${item.lb}">x</button>
     </div>`).join('');
-    document.querySelectorAll('.deck-card .lb-btn').forEach(b=>b.onclick=e=>{
-        e.stopPropagation();
-        let idx=+b.dataset.idx, newLb=+b.dataset.lb;
-        if(idx>=0&&idx<deck.length)deck[idx].lb=newLb, renderDeck();
-    });
     document.querySelectorAll('.btn-remove').forEach(b=>b.onclick=e=>{
         e.stopPropagation();
-        let idx=deck.findIndex(x=>x.id===b.dataset.id);
-        if(idx>=0)deck.splice(idx,1), renderCardGrid(), renderDeck();
+        let key=b.dataset.key;
+        let idx=deck.findIndex(x=>x.id+'_lb'+x.lb===key);
+        if(idx>=0)deck.splice(idx,1), cardRankings=null, renderCardGrid(), renderDeck();
     });
     let tR=0, tF=0;
     deck.forEach(i=>{tR+=getVal(i.card,i.lb,'race_bonus');tF+=getVal(i.card,i.lb,'fan_bonus');});
@@ -313,7 +373,11 @@ function renderDeck(){
         <div class="stat-row"><span class="stat-label">Fan Bonus</span><span class="stat-value" style="color:#ec4899">${tF}%</span></div>`;
 }
 
-document.getElementById('search').oninput=e=>{searchText=e.target.value;renderCardGrid();};
+let searchTimeout=null;
+document.getElementById('search').oninput=e=>{
+    clearTimeout(searchTimeout);
+    searchTimeout=setTimeout(()=>{searchText=e.target.value;renderCardGrid();},150);
+};
 document.getElementById('turnsSlider').oninput=e=>{simTurns=+e.target.value;document.getElementById('turnsValue').textContent=simTurns;renderRaceGrid();};
 document.getElementById('simsSlider').oninput=e=>{simCount=+e.target.value;document.getElementById('simsValue').textContent=simCount;};
 
@@ -409,13 +473,25 @@ document.getElementById('btnSim').onclick=async function(){
             body:JSON.stringify({deck:deckData,num_simulations:simCount,max_turns:simTurns,race_schedule:raceList,stat_bonus:statBonus,starting_stats:startStats})
         });
         
-        let reader=res.body.getReader(), decoder=new TextDecoder(), result=null;
+        let reader=res.body.getReader(), decoder=new TextDecoder(), result=null, data;
+        let buffer=''; 
         while(true){
             let {done,value}=await reader.read();
             if(done)break;
-            for(let line of decoder.decode(value).split('\n')){
+            buffer+=decoder.decode(value,{stream:true});
+            let lines=buffer.split('\n');
+            buffer=lines.pop()||'';
+            for(let line of lines){
+                line=line.trim();
                 if(line.startsWith('data:')){
-                    let data=JSON.parse(line.slice(5));
+                    let jsonStr=line.slice(5).trim();
+                    if(!jsonStr)continue;
+                    try{
+                        data=JSON.parse(jsonStr);
+                    }catch(e){
+                        console.error('JSON parse error:',e,'in:',jsonStr);
+                        continue;
+                    }
                     if(data.progress!==undefined){
                         let pct=(data.progress/data.total*100).toFixed(1);
                         document.getElementById('pf').style.width=pct+'%';
@@ -466,6 +542,99 @@ document.getElementById('btnSim').onclick=async function(){
     }catch(e){document.getElementById('results').innerHTML=`<div style="color:#ef4444;padding:1rem">Error: ${e}</div>`;}
     this.disabled=false;
     this.textContent='Run Simulation';
+};
+
+document.getElementById('btnRank').onclick=async function(){
+    if(deck.length===0)return;
+    this.disabled=true;
+    this.textContent='Ranking...';
+    
+    try{
+        let deckData=deck.map(i=>({card_id:i.id,lb:i.lb}));
+        let raceList=Object.entries(raceSchedule).map(([t,g])=>({turn:+t,grade:g}));
+        let statBonus=bonusIds.map(id=>+document.getElementById(id).value||0);
+        let startStats=['startSpd','startSta','startPow','startGut','startWis'].map(id=>+document.getElementById(id).value||88);
+        
+        let deckTitles=new Set(deck.map(x=>x.card.title));
+        let candidates=[];
+        for(let c of allCards){
+            if(deckTitles.has(c.title))continue;
+            for(let lb=0; lb<=4; lb++){
+                candidates.push({card_id:c.id, lb:lb});
+            }
+        }
+        let total=candidates.length;
+        
+        document.getElementById('results').innerHTML=`<div class="results"><h3>Ranking Cards...</h3><div class="progress-container"><div class="progress-bar"><div class="progress-fill" id="pf" style="width:0%"></div></div><div class="progress-text" id="pt">0 / ${total}</div></div></div>`;
+        
+        let res=await fetch('/api/rank_cards',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+                candidates:candidates,
+                base_deck:deckData,
+                num_simulations:simCount,
+                max_turns:simTurns,
+                race_schedule:raceList,
+                stat_bonus:statBonus,
+                starting_stats:startStats
+            })
+        });
+        
+        let reader=res.body.getReader(), decoder=new TextDecoder();
+        let rankedData=null, data;
+        let buffer=''; 
+        while(true){
+            let {done,value}=await reader.read();
+            if(done)break;
+            buffer+=decoder.decode(value,{stream:true});
+            let lines=buffer.split('\n');
+            buffer=lines.pop()||'';
+            for(let line of lines){
+                line=line.trim();
+                if(line.startsWith('data:')){
+                    let jsonStr=line.slice(5).trim();
+                    if(!jsonStr)continue;
+                    try{
+                        data=JSON.parse(jsonStr);
+                    }catch(e){
+                        console.error('JSON parse error:',e,'in:',jsonStr);
+                        continue;
+                    }
+                    if(data.progress!==undefined){
+                        let pct=(data.progress/total*100).toFixed(1);
+                        document.getElementById('pf').style.width=pct+'%';
+                        document.getElementById('pt').textContent=`${data.progress} / ${total}`;
+                    }
+                    if(data.done)rankedData=data.ranked;
+                }
+            }
+        }
+        
+        if(rankedData){
+            let results=rankedData.map(r=>{
+                let c=allCards.find(x=>x.id===r.card_id);
+                let avg=r.avg_stats, avgSp=r.avg_sp;
+                let avgScore=avg[0]+avg[1]+avg[2]+avg[3]+avg[4]+avgSp/2;
+                return {baseId:r.card_id, lb:r.lb, card:c, avgScore, avg, avgSp};
+            });
+            
+            results.sort((a,b)=>b.avgScore-a.avgScore);
+            cardRankings=results;
+            renderRankSort();
+            setTimeout(()=>renderCardGrid(), 10);
+            
+            document.getElementById('results').innerHTML=`<div class="results">
+                <h3>Card Ranking</h3>
+                ${results.slice(0,10).map((r,i)=>`<div class="result-row">
+                    <span class="result-label" style="font-weight:700">${i+1}. ${r.card.title} LB${r.lb}</span>
+                    <span class="result-value">${r.avgScore.toFixed(1)}</span>
+                </div>`).join('')}
+            </div>`;
+        }
+    }catch(e){document.getElementById('results').innerHTML=`<div style="color:#ef4444;padding:1rem">Error: ${e}</div>`;}
+    this.disabled=false;
+    this.textContent='Rank';
 };
 
 init();
