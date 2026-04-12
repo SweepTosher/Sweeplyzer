@@ -51,7 +51,8 @@ def _parse_part(text: str, effect: UniqueEffect):
     pct_val = int(pct_match.group(1)) if pct_match else 0
     int_val = int(int_match.group(1)) if int_match else 0
 
-    if 'training effectiveness' in t or 'increased training' in t:
+    if ('training effectiveness' in t or 'increased training' in t or
+            ('effectiveness of' in t and 'training' in t)):
         if pct_val > 0:
             effect.training_effectiveness += pct_val
         elif int_val > 0:

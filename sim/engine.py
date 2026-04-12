@@ -127,15 +127,6 @@ class SimulationEngine:
         for i in range(5):
             state.add_status(i, ue_initial[i])
 
-        ue_fail = self.effect_calculator.get_failure_rate_drop()
-        ue_vital = self.effect_calculator.get_vital_cost_drop()
-        for card in self.deck_cards:
-            card.failure_rate_drop += int(ue_fail * 100)
-            card.vital_cost_drop += int(ue_vital * 100)
-        for card in self.deck_cards:
-            card.failure_rate_drop = min(100, card.failure_rate_drop)
-            card.vital_cost_drop = min(100, card.vital_cost_drop)
-
         scorer = TrainingScorer(self.deck_cards, self.effect_calculator)
 
         card_events_fired = [[] for _ in range(len(self.deck_cards))]
