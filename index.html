@@ -1504,17 +1504,43 @@ class UniqueEffectCalculator {
         }
         this.unique_types = uniqueTypesSet.size;
     }
-    get_training_effectiveness_bonus(state) {
+    get_stat_bonus_for_card(state, card) {
+        const result = [0, 0, 0, 0, 0, 0];
+        for (const ue of this.active_effects) {
+            if (card.unique_effect_id !== ue.id) continue;
+            const bonuses = [ue.speed_bonus, ue.stamina_bonus, ue.power_bonus, ue.guts_bonus, ue.wits_bonus, ue.skill_point_bonus];
+            if (!bonuses.some(b => b > 0)) continue;
+            if (ue.bond_threshold > 0) {
+                const cardIdx = this.deck_cards.indexOf(card);
+                if (cardIdx < 0 || state.friendship[cardIdx] < ue.bond_threshold) {
+                    continue;
+                }
+            }
+            if (ue.full_bond) {
+                const cardIdx = this.deck_cards.indexOf(card);
+                if (cardIdx < 0 || state.friendship[cardIdx] < 100) {
+                    continue;
+                }
+            }
+            for (let i = 0; i < 6; i++) {
+                result[i] += bonuses[i];
+            }
+        }
+        return result;
+    }
+    get_training_effectiveness_for_card(state, card) {
         let total = 0;
         for (const ue of this.active_effects) {
-            if (ue.training_effectiveness > 0) {
+            if (ue.training_effectiveness > 0 && card.unique_effect_id === ue.id) {
                 if (ue.bond_threshold > 0) {
-                    if (!this.deck_cards.some((_, i) => i < state.friendship.length && state.friendship[i] >= ue.bond_threshold)) {
+                    const cardIdx = this.deck_cards.indexOf(card);
+                    if (cardIdx < 0 || state.friendship[cardIdx] < ue.bond_threshold) {
                         continue;
                     }
                 }
                 if (ue.full_bond) {
-                    if (!this.deck_cards.some((_, i) => i < state.friendship.length && state.friendship[i] >= 100)) {
+                    const cardIdx = this.deck_cards.indexOf(card);
+                    if (cardIdx < 0 || state.friendship[cardIdx] < 100) {
                         continue;
                     }
                 }
@@ -1526,26 +1552,52 @@ class UniqueEffectCalculator {
         }
         return total;
     }
-    get_failure_rate_drop() {
+    get_mood_effect_for_card(state, card) {
         let total = 0;
         for (const ue of this.active_effects) {
-            total += ue.failure_rate_drop;
+            if (ue.mood_effect > 0 && card.unique_effect_id === ue.id) {
+                if (ue.full_bond) {
+                    const cardIdx = this.deck_cards.indexOf(card);
+                    if (cardIdx >= 0 && state.friendship[cardIdx] >= 100) {
+                        total += ue.mood_effect;
+                    }
+                } else if (ue.bond_threshold > 0) {
+                    const cardIdx = this.deck_cards.indexOf(card);
+                    if (cardIdx >= 0 && state.friendship[cardIdx] >= ue.bond_threshold) {
+                        total += ue.mood_effect;
+                    }
+                } else {
+                    total += ue.mood_effect;
+                }
+            }
+        }
+        return total;
+    }
+    get_failure_rate_drop_for_card(state, card) {
+        let total = 0;
+        for (const ue of this.active_effects) {
+            if (card.unique_effect_id === ue.id) {
+                total += ue.failure_rate_drop;
+            }
         }
         return Math.min(1.0, total / 100.0);
     }
-    get_vital_cost_drop() {
+    get_vital_cost_drop_for_card(state, card) {
         let total = 0;
         for (const ue of this.active_effects) {
-            total += ue.vital_cost_drop;
+            if (card.unique_effect_id === ue.id) {
+                total += ue.vital_cost_drop;
+            }
         }
         return Math.min(1.0, total / 100.0);
     }
-    get_specialty_priority_bonus(state) {
+    get_specialty_priority_bonus_for_card(state, card) {
         let total = 0;
         for (const ue of this.active_effects) {
-            if (ue.specialty_priority > 0) {
+            if (ue.specialty_priority > 0 && card.unique_effect_id === ue.id) {
                 if (ue.bond_threshold > 0) {
-                    if (!this.deck_cards.some((_, i) => i < state.friendship.length && state.friendship[i] >= ue.bond_threshold)) {
+                    const cardIdx = this.deck_cards.indexOf(card);
+                    if (cardIdx >= 0 && state.friendship[cardIdx] < ue.bond_threshold) {
                         continue;
                     }
                 }
@@ -1567,49 +1619,6 @@ class UniqueEffectCalculator {
             total += ue.race_bonus;
         }
         return total;
-    }
-    get_mood_effect_bonus(state) {
-        let total = 0;
-        for (const ue of this.active_effects) {
-            if (ue.mood_effect > 0) {
-                if (ue.full_bond) {
-                    if (this.deck_cards.some((_, i) => i < state.friendship.length && state.friendship[i] >= 100)) {
-                        total += ue.mood_effect;
-                    }
-                } else if (ue.bond_threshold > 0) {
-                    if (this.deck_cards.some((_, i) => i < state.friendship.length && state.friendship[i] >= ue.bond_threshold)) {
-                        total += ue.mood_effect;
-                    }
-                } else {
-                    total += ue.mood_effect;
-                }
-            }
-        }
-        return total;
-    }
-    get_stat_bonus(state) {
-        const result = [0, 0, 0, 0, 0, 0];
-        for (const ue of this.active_effects) {
-            const bonuses = [ue.speed_bonus, ue.stamina_bonus, ue.power_bonus, ue.guts_bonus, ue.wits_bonus, ue.skill_point_bonus];
-            if (!bonuses.some(b => b > 0)) continue;
-            if (ue.bond_threshold > 0) {
-                if (!this.deck_cards.some((_, i) => i < state.friendship.length && state.friendship[i] >= ue.bond_threshold)) {
-                    continue;
-                }
-            }
-            if (ue.full_bond) {
-                if (!this.deck_cards.some((_, i) => i < state.friendship.length && state.friendship[i] >= 100)) {
-                    continue;
-                }
-            }
-            if (ue.deck_type_min > 0 && this.unique_types < ue.deck_type_min) {
-                continue;
-            }
-            for (let i = 0; i < 6; i++) {
-                result[i] += bonuses[i];
-            }
-        }
-        return result;
     }
     get_initial_stat_bonus() {
         let result = [0, 0, 0, 0, 0];
@@ -1633,7 +1642,6 @@ class UniqueEffectCalculator {
 }
 function distributeCards(state, deckCards, effectCalculator) {
     const distribution = {0: [], 1: [], 2: [], 3: [], 4: []};
-    const specBonus = effectCalculator.get_specialty_priority_bonus(state);
     for (let idx = 0; idx < deckCards.length; idx++) {
         const card = deckCards[idx];
         if (card.is_friend_card() || card.is_group_card()) {
@@ -1641,6 +1649,7 @@ function distributeCards(state, deckCards, effectCalculator) {
             distribution[train].push(idx);
             continue;
         }
+        const specBonus = effectCalculator.get_specialty_priority_bonus_for_card(state, card);
         const weights = [];
         for (let t = 0; t < 5; t++) {
             if (t === card.card_type) {
@@ -1674,11 +1683,11 @@ function calculateTrainingValue(state, trainType, cardsAtTraining, deckCards, ef
                 base[i] += card.stat_bonus[i];
             }
         }
-    }
-    const ueStatBonuses = effectCalculator.get_stat_bonus(state);
-    for (let i = 0; i < 6; i++) {
-        if (base[i] > 0 && i < ueStatBonuses.length) {
-            base[i] += ueStatBonuses[i];
+        const ueStatBonus = effectCalculator.get_stat_bonus_for_card(state, card);
+        for (let i = 0; i < 6; i++) {
+            if (base[i] > 0 && i < ueStatBonus.length) {
+                base[i] += ueStatBonus[i];
+            }
         }
     }
     let totalTraining = 0;
@@ -1691,13 +1700,11 @@ function calculateTrainingValue(state, trainType, cardsAtTraining, deckCards, ef
         totalMotivation += card.mood_effect;
         totalFailRateDrop += card.failure_rate_drop;
         totalVitalCostDrop += card.vital_cost_drop;
+        totalTraining += effectCalculator.get_training_effectiveness_for_card(state, card);
+        totalMotivation += effectCalculator.get_mood_effect_for_card(state, card);
+        totalFailRateDrop += effectCalculator.get_failure_rate_drop_for_card(state, card) * 100;
+        totalVitalCostDrop += effectCalculator.get_vital_cost_drop_for_card(state, card) * 100;
     }
-    totalTraining += effectCalculator.get_training_effectiveness_bonus(state);
-    totalMotivation += effectCalculator.get_mood_effect_bonus(state);
-    const ueFail = effectCalculator.get_failure_rate_drop();
-    totalFailRateDrop += ueFail * 100;
-    const ueVital = effectCalculator.get_vital_cost_drop();
-    totalVitalCostDrop += ueVital * 100;
     totalFailRateDrop = Math.min(100, totalFailRateDrop);
     totalVitalCostDrop = Math.min(100, totalVitalCostDrop);
     const shiningIndices = [];
