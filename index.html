@@ -75,9 +75,6 @@ h1{font-size:1.5rem;font-weight:900;color:var(--accent)}
 .rank-pool-header span{font-size:.75rem;font-weight:700;color:var(--muted)}
 .rank-pool-header .clear-btn,.rank-pool-header .btn-clear-rank{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:.7rem;padding:0}
 .rank-pool-header .clear-btn:hover,.rank-pool-header .btn-clear-rank:hover{color:#ef4444}
-.rank-pool-header{display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:.3rem}
-.rank-pool-header .clear-btn{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:.7rem}
-.rank-pool-header .clear-btn:hover{color:#ef4444}
 .btn-clear-rank{background:#8b5cf6;color:#fff;border:none;padding:.4rem 1rem;border-radius:6px;font-weight:700;cursor:pointer;font-size:.8rem;margin-top:.5rem}
 .btn-clear-rank:hover{opacity:.9}
 .rank-card{background:var(--surface);border:2px solid rgba(255,255,255,.1);border-radius:10px;padding:.4rem;cursor:grab;width:calc(33.33% - .35rem);box-sizing:border-box}
@@ -96,21 +93,27 @@ h1{font-size:1.5rem;font-weight:900;color:var(--accent)}
 .result-value{font-weight:700;color:#22c55e}
 .result-view{background:var(--surface);border:2px solid rgba(255,255,255,.1);border-radius:12px;padding:1rem}
 .race-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin-top:.5rem}
-.race-cell{width:100%;aspect-ratio:1;border:1px solid rgba(255,255,255,.1);border-radius:3px;cursor:pointer;font-size:.55rem;display:flex;align-items:center;justify-content:center;font-weight:700;text-align:center;line-height:1}
+.race-cell{width:100%;aspect-ratio:1;border:1px solid rgba(255,255,255,.1);border-radius:3px;cursor:pointer;font-size:.55rem;display:flex;align-items:center;justify-content:center;font-weight:700;text-align:center;line-height:1;user-select:none}
 .race-cell:hover{border-color:var(--accent)}
+.race-cell.junior,.race-cell.classic,.race-cell.spring,.race-cell.senior{background:rgba(69,194,229,.2);border-color:rgba(69,194,229,.4)}
 .race-cell.G1{background:#f59e0b;color:#000}
-.race-cell.G2{background:#3b82f6;color:#fff}
-.race-cell.G3{background:#8b5cf6;color:#fff}
+.race-cell.G23{background:#8b5cf6;color:#fff}
+.race-cell.OP{background:#22c55e;color:#000}
 .race-cell.summer{background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.4)}
-.race-cell.empty{background:rgba(255,255,255,.03)}
+.race-cell[data-confident="false"]{border:2px solid #ef4444}
 .race-grade-sel{display:flex;gap:.3rem;margin-top:.3rem}
 .race-grade-btn{padding:.2rem .6rem;border-radius:4px;border:1px solid rgba(255,255,255,.2);background:transparent;color:var(--muted);cursor:pointer;font-size:.75rem;font-weight:700}
 .race-grade-btn:hover{border-color:var(--accent)}
 .race-grade-btn.active{border-color:transparent}
 .race-grade-btn.active[data-grade="G1"]{background:#f59e0b;color:#000}
-.race-grade-btn.active[data-grade="G2"]{background:#3b82f6;color:#fff}
-.race-grade-btn.active[data-grade="G3"]{background:#8b5cf6;color:#fff}
+.race-grade-btn.active[data-grade="G23"]{background:#8b5cf6;color:#fff}
+.race-grade-btn.active[data-grade="OP"]{background:#22c55e;color:#000}
 .race-grade-btn.active[data-grade="clear"]{background:#ef4444;color:#fff}
+.confident-toggle{margin-left:auto;display:flex;align-items:center;gap:.3rem;font-size:.7rem;font-weight:700;color:var(--muted);cursor:pointer}
+.confident-toggle input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent)}
+.confident-toggle input[type=checkbox]:not(:checked){accent-color:#ef4444}
+.confident-toggle:has(input:not(:checked)){color:#ef4444}
+.confident-toggle:has(input:not(:checked))::before{content:'⚠ ';}
 .stat-bonus-row{display:flex;align-items:center;gap:.4rem;margin-top:.3rem;font-size:.75rem}
 .stat-bonus-row .stat-label-s{width:3.5rem;color:var(--muted);font-weight:700;text-transform:uppercase}
 .stat-bonus-row input[type=range]{width:70px;margin:0}
@@ -226,9 +229,13 @@ h1{font-size:1.5rem;font-weight:900;color:var(--accent)}
                             </div>
                             <div class="race-grade-sel">
                                 <button class="race-grade-btn active" data-grade="G1">G1</button>
-                                <button class="race-grade-btn" data-grade="G2">G2</button>
-                                <button class="race-grade-btn" data-grade="G3">G3</button>
+                                <button class="race-grade-btn" data-grade="G23">G2/3</button>
+                                <button class="race-grade-btn" data-grade="OP">OP</button>
                                 <button class="race-grade-btn" data-grade="clear">X</button>
+                                <label class="toggle-label confident-toggle">
+                                    <input type="checkbox" id="confidentToggle" checked>
+                                    <span>Confident</span>
+                                </label>
                             </div>
                             <div class="race-grid" id="raceGrid"></div>
                         </div>
@@ -256,8 +263,8 @@ h1{font-size:1.5rem;font-weight:900;color:var(--accent)}
     </div>
     <script>
 let allCards=[], uniqueEffectsData=[], deck=[], rankPool=[], filterType='all', searchText='';
-let simTurns=72, simCount=10000;
-let raceSchedule={}, raceGrade='G1';
+let simTurns=72, simCount=3000;
+let raceSchedule={}, raceGrade='G1', raceConfident=true;
 let cardRankings=null;
 let cardElementMap=null;
 const SUMMER=new Set([37,38,39,40,61,62,63,64]);
@@ -276,10 +283,7 @@ async function init(){
         renderCards();
         renderDeck();
         renderPool();
-    }catch(e){
-        console.error('Init error:', e);
-        document.getElementById('cardGrid').innerHTML='<p style="color:var(--muted);padding:2rem">Error loading data. Serve via http-server or GitHub Pages.</p>';
-    }
+    }catch(e){}
 }
 
 function getVal(card,l,k){return ((card.effects||[])[l]||{})[k]||0;}
@@ -580,19 +584,34 @@ document.querySelectorAll('.race-grade-btn').forEach(b=>b.onclick=()=>{
     document.querySelectorAll('.race-grade-btn').forEach(x=>x.classList.remove('active'));
     b.classList.add('active');
 });
+document.getElementById('confidentToggle').onchange=e=>{
+    raceConfident=e.target.checked;
+    renderRaceGrid();
+};
 
 function renderRaceGrid(){
     let html='';
     for(let t=1;t<=simTurns;t++){
-        let g=raceSchedule[t], cls=g||'empty';
-        if(SUMMER.has(t)&&!g)cls+=' summer';
-        html+=`<div class="race-cell ${cls}" data-turn="${t}">${g||t}</div>`;
+        let r=raceSchedule[t];
+        let period=getPeriodClass(t);
+        let cls='race-cell '+period;
+        if(r) cls+=' '+r.grade;
+        else if(SUMMER.has(t)) cls+=' summer';
+        html+=`<div class="${cls}" data-turn="${t}" data-confident="${r?r.confident:'true'}">${r?r.grade:t}</div>`;
     }
     document.getElementById('raceGrid').innerHTML=html;
-    document.querySelectorAll('.race-cell').forEach(el=>el.onclick=()=>{
+    document.querySelectorAll('#raceGrid > div').forEach(el=>el.onclick=()=>{
         let t=+el.dataset.turn;
         if(raceGrade==='clear')delete raceSchedule[t];
-        else raceSchedule[t]===raceGrade?delete raceSchedule[t]:raceSchedule[t]=raceGrade;
+        else if(raceSchedule[t]){
+            if(raceSchedule[t].grade===raceGrade){
+                delete raceSchedule[t];
+            }else{
+                raceSchedule[t]={grade:raceGrade,confident:raceConfident};
+            }
+        }else{
+            raceSchedule[t]={grade:raceGrade,confident:raceConfident};
+        }
         renderRaceGrid();
     });
     document.getElementById('raceCount').textContent=Object.keys(raceSchedule).length;
@@ -887,12 +906,12 @@ document.getElementById('btnSim').onclick=async function(){
     try{
         window.simDeckCards=deck.map(c=>({title:c.card.title,id:c.card.id}));
         let deckData=deck.map(i=>({card_id:i.id,lb:i.lb}));
-        let raceList=Object.entries(raceSchedule).map(([t,g])=>({turn:+t,grade:g}));
+        let raceList=Object.entries(raceSchedule).map(([t,g])=>({turn:+t,grade:g.grade,confident:g.confident}));
         let statBonus=bonusIds.map(id=>+document.getElementById(id).value||0);
         let startStats=['startSpd','startSta','startPow','startGut','startWis'].map(id=>+document.getElementById(id).value||88);
         
         let engine=new SimulationEngine(deckData, allCards, uniqueEffectsData,{
-            numSimulations:simCount,maxTurns:simTurns,raceSchedule:raceList,statBonus,startingStats:startStats
+            numSimulations:simCount,maxTurns:simTurns,raceSchedule:raceList,statBonus,startingStats:startStats,confident:document.getElementById('confidentToggle').checked
         });
         
         let result=engine.runSimulations();
@@ -945,7 +964,7 @@ document.getElementById('btnRank').onclick=async function(){
     
     try{
         let deckData=deck.map(i=>({card_id:i.id,lb:i.lb}));
-        let raceList=Object.entries(raceSchedule).map(([t,g])=>({turn:+t,grade:g}));
+        let raceList=Object.entries(raceSchedule).map(([t,g])=>({turn:+t,grade:g.grade,confident:g.confident}));
         let statBonus=bonusIds.map(id=>+document.getElementById(id).value||0);
         let startStats=['startSpd','startSta','startPow','startGut','startWis'].map(id=>+document.getElementById(id).value||88);
         
@@ -1033,16 +1052,80 @@ init();
     'speed': 0, 'stamina': 1, 'power': 2, 'guts': 3, 'wisdom': 4, 'friend': 6, 'group': 6
 };
 const TRA_SPEED = 0, TRA_STAMINA = 1, TRA_POWER = 2, TRA_GUTS = 3, TRA_WISDOM = 4, TRA_REST = 5, TRA_NONE = -1;
+const PRACTICE_NORMAL = 0, PRACTICE_PERFECT = 1, PRACTICE_POOR = 2;
 const DATE_JUNIOR_END = 24, DATE_CLASSIC_END = 48, DATE_SENIOR_END = 72, DATE_SPRING_END = 60;
+
+const STATUS_EFFECTS = {
+    [PRACTICE_NORMAL]: { failure_mod: 0, stat_mod: 0, mood_mod: 0 },
+    [PRACTICE_PERFECT]: { failure_mod: -2, stat_mod: 0, mood_mod: 0 },
+    [PRACTICE_POOR]: { failure_mod: 2, stat_mod: -10, mood_mod: -1 },
+};
+
+const PRACTICE_FAIL_EVENT = {
+    name: "Normal Get Well Soon!",
+    top_path: {
+        roll_threshold: 92,
+        outcomes: [
+            { state: PRACTICE_NORMAL, stat_penalty: -5, mood_penalty: -1, weight: 92 },
+            { state: PRACTICE_POOR, stat_penalty: -5, mood_penalty: -1, weight: 8 },
+        ]
+    },
+    bottom_path: {
+        roll_threshold: 85,
+        outcomes: [
+            { state: PRACTICE_NORMAL, stat_penalty: -10, mood_penalty: -1, weight: 30 },
+            { state: PRACTICE_POOR, stat_penalty: -10, mood_penalty: -1, weight: 55 },
+            { state: PRACTICE_PERFECT, stat_penalty: 0, mood_penalty: 0, weight: 15 },
+        ]
+    },
+    get_path: function(state) {
+        if (state.has_status(PRACTICE_POOR) || state.turn <= DATE_JUNIOR_END) {
+            return this.bottom_path;
+        }
+        return this.top_path;
+    }
+};
+
+const OTONASHI_APPEAR_DAY = 12;
+const OTONASHI_APPEAR_CHANCE = 0.5;
+
+const RACE_PLACEMENT_VICTORY = 0;
+const RACE_PLACEMENT_SOLID = 1;
+const RACE_PLACEMENT_DEFEAT = 2;
+
+const RACE_REWARDS = {
+    [RACE_PLACEMENT_VICTORY]: {
+        top: { energy: -15, g1: [10, 45], g23: [8, 35], op: [5, 30] },
+        bot: { energy_a: -5, energy_b: -20, g1: [10, 45], g23: [8, 35], op: [5, 30] }
+    },
+    [RACE_PLACEMENT_SOLID]: {
+        top: { energy: -20, g1: [8, 45], g23: [5, 35], op: [3, 30] },
+        bot: { energy_a: -10, energy_b: -30, g1: [8, 45], g23: [5, 35], op: [3, 30] }
+    },
+    [RACE_PLACEMENT_DEFEAT]: {
+        top: { energy: -25, g1: [4, 25], g23: [3, 20], op: [0, 10] },
+        bot: { energy_a: -15, energy_b: -35, g1: [4, 25], g23: [3, 20], op: [0, 10] }
+    }
+};
+
+const PLACEMENT_CONFIDENT = [80, 15, 5];
+const PLACEMENT_NORMAL = [65, 25, 10];
+const TOP_TRIGGER_CONFIDENT = 15;
+const TOP_TRIGGER_NORMAL = 5;
+
+const ELATED_COVERAGE_CONFIDENT = 0.15;
+const ELATED_COVERAGE_NORMAL = 0.05;
+
+const REST_THRESHOLD = 43;
 const SUMMER_CAMP_1_START = 36, SUMMER_CAMP_1_END = 40;
 const SUMMER_CAMP_2_START = 60, SUMMER_CAMP_2_END = 64;
 const TOTAL_TURN = 78;
 const TRAINING_BASIC_VALUE = [
-    [[11,0,2,0,0,5,-19],[12,0,2,0,0,5,-20],[13,0,2,0,0,5,-21],[14,0,3,0,0,5,-23],[15,0,4,0,0,5,-25]],
-    [[0,10,0,4,0,5,-20],[0,11,0,4,0,5,-21],[0,12,0,5,0,5,-22],[0,13,0,5,0,5,-24],[0,14,0,6,0,5,-26]],
-    [[0,4,10,0,0,5,-20],[0,4,11,0,0,5,-21],[0,5,12,0,0,5,-22],[0,5,13,0,0,5,-24],[0,6,14,0,0,5,-26]],
-    [[2,0,2,9,0,5,-20],[2,0,2,10,0,5,-21],[2,0,2,11,0,5,-22],[3,0,2,12,0,5,-24],[4,0,3,13,0,5,-26]],
-    [[2,0,0,0,8,5,5],[2,0,0,0,9,5,5],[2,0,0,0,10,5,5],[3,0,0,0,11,5,5],[4,0,0,0,12,5,5]]
+    [[8,0,4,0,0,2,-19],[9,0,4,0,0,2,-20],[10,0,4,0,0,2,-21],[11,0,5,0,0,2,-23],[12,0,6,0,0,2,-25]],
+    [[0,7,0,3,0,2,-17],[0,8,0,3,0,2,-18],[0,9,0,3,0,2,-19],[0,10,0,4,0,2,-21],[0,11,0,5,0,2,-23]],
+    [[0,4,6,0,0,2,-18],[0,4,7,0,0,2,-19],[0,4,8,0,0,2,-20],[0,5,9,0,0,2,-22],[0,6,10,0,0,2,-24]],
+    [[3,0,3,6,0,2,-20],[3,0,3,7,0,2,-21],[3,0,3,8,0,2,-22],[4,0,3,9,0,2,-24],[4,0,4,10,0,2,-26]],
+    [[2,0,0,0,6,3,5],[2,0,0,0,7,3,5],[2,0,0,0,8,3,5],[3,0,0,0,9,3,5],[4,0,0,0,10,3,5]]
 ];
 const FAIL_RATE_BASIC = [
     [520, 524, 528, 532, 536],
@@ -1123,6 +1206,39 @@ class CareerState {
         this.last_medic_turn = -10;
         this.debut_race_win = false;
         this.ura_races_completed = [false, false, false];
+        this.status_effects = [];
+        this.otonashi_bond = 0;
+        this.otonashi_appeared = false;
+        this.otonashi_facility = -1;
+    }
+    has_status(status_id) {
+        return this.status_effects.includes(status_id);
+    }
+    add_status_effect(status_id) {
+        if (!this.has_status(status_id)) {
+            this.status_effects.push(status_id);
+        }
+    }
+    remove_status_effect(status_id) {
+        this.status_effects = this.status_effects.filter(s => s !== status_id);
+    }
+    get_status_modifier(effect_key) {
+        let total = 0;
+        for (const status_id of this.status_effects) {
+            const effect = STATUS_EFFECTS[status_id];
+            if (effect && effect[effect_key] !== undefined) {
+                total += effect[effect_key];
+            }
+        }
+        return total;
+    }
+    get_otonashi_bonus() {
+        const b = this.otonashi_bond;
+        if (b <= 20) return 2;
+        if (b <= 59) return 3;
+        if (b <= 79) return 4;
+        if (b <= 99) return Math.random() < 0.5 ? 5 : 4;
+        return Math.random() < 0.6 ? 5 : 4;
     }
     get_facility_level(train_type) {
         return Math.floor(this.trainLevelCount[train_type] / 4);
@@ -1161,6 +1277,7 @@ class CareerState {
         if (this.vital < x0) {
             f = (100 - this.vital) * (x0 - this.vital) / 40.0;
         }
+        f += this.get_status_modifier('failure_mod');
         return Math.max(0, Math.min(99, f * fail_rate_mult));
     }
     get_period_index() {
@@ -1196,6 +1313,10 @@ class CareerState {
         s.last_medic_turn = this.last_medic_turn;
         s.debut_race_win = this.debut_race_win;
         s.ura_races_completed = this.ura_races_completed.slice();
+        s.status_effects = [...this.status_effects];
+        s.otonashi_bond = this.otonashi_bond;
+        s.otonashi_appeared = this.otonashi_appeared;
+        s.otonashi_facility = this.otonashi_facility;
         return s;
     }
 }
@@ -1849,6 +1970,10 @@ class TrainingScorer {
                     score *= 1.03;
                 }
             }
+            if (state.otonashi_appeared && state.otonashi_facility === idx) {
+                const otonashiBonus = state.get_otonashi_bonus();
+                score += otonashiBonus * 0.01;
+            }
             computedScores[idx] = score;
         }
         if (highestStatIdx !== null) {
@@ -1924,6 +2049,30 @@ class TrainingScorer {
             failureRate = 0;
         }
         if (Math.random() * 100 < failureRate) {
+            const path = PRACTICE_FAIL_EVENT.get_path(state);
+            let roll = Math.random() * 100;
+            let cumulative = 0;
+            let selectedOutcome = path.outcomes[0];
+            for (const outcome of path.outcomes) {
+                cumulative += outcome.weight;
+                if (roll < cumulative) {
+                    selectedOutcome = outcome;
+                    break;
+                }
+            }
+            if (selectedOutcome.state === PRACTICE_POOR) {
+                state.remove_status_effect(PRACTICE_PERFECT);
+                state.add_status_effect(PRACTICE_POOR);
+            } else if (selectedOutcome.state === PRACTICE_PERFECT) {
+                state.remove_status_effect(PRACTICE_POOR);
+                state.add_status_effect(PRACTICE_PERFECT);
+            }
+            if (selectedOutcome.mood_penalty !== 0) {
+                state.add_motivation(selectedOutcome.mood_penalty);
+            }
+            if (selectedOutcome.stat_penalty !== 0) {
+                state.add_status(trainType, selectedOutcome.stat_penalty);
+            }
             state.add_vital(vitalChange);
             return false;
         }
@@ -1949,9 +2098,12 @@ class SimulationEngine {
         this.raceSchedule = options.raceSchedule || [];
         this.statBonus = options.statBonus || [0, 0, 0, 0, 0];
         this.startingStats = options.startingStats || [88, 88, 88, 88, 88];
+        this.confident = options.confident !== undefined ? options.confident : true;
         this.raceTurns = {};
+        this.raceConfident = {};
         for (const r of this.raceSchedule) {
-            this.raceTurns[r.turn] = r.grade || 'G3';
+            this.raceTurns[r.turn] = r.grade || 'G23';
+            this.raceConfident[r.turn] = r.confident !== undefined ? r.confident : this.confident;
         }
         this.deckCards = [];
         for (const item of deckData) {
@@ -2049,15 +2201,16 @@ class SimulationEngine {
         const trainingCountsTimeline = [];
         const statHistory = [];
         const spHistory = [];
-        const RACE_GRADES = {
-            'G1': {stat_bonus: 5, sp_bonus: 50},
-            'G2': {stat_bonus: 3, sp_bonus: 45},
-            'G3': {stat_bonus: 2, sp_bonus: 40}
-        };
         while (state.turn < this.maxTurns) {
             statHistory.push([...state.fiveStatus]);
             spHistory.push(state.skillPt);
             facilityLevelsTimeline.push([...state.trainLevelCount]);
+            if (!state.otonashi_appeared && state.turn >= OTONASHI_APPEAR_DAY) {
+                if (Math.random() < OTONASHI_APPEAR_CHANCE) {
+                    state.otonashi_appeared = true;
+                    state.otonashi_facility = Math.floor(Math.random() * 5);
+                }
+            }
             state.medic_room_available = this._rollMedicRoom(state);
             const distribution = distributeCards(state, this.deckCards, this.effectCalculator);
             for (let f = 0; f < 5; f++) {
@@ -2068,21 +2221,75 @@ class SimulationEngine {
             }
             if (state.turn in this.raceTurns) {
                 const grade = this.raceTurns[state.turn];
-                const gradeData = RACE_GRADES[grade] || RACE_GRADES['G3'];
-                let totalSaihou = this.deckCards.reduce((s, c) => s + c.race_bonus, 0);
-                totalSaihou += this.effectCalculator.get_race_bonus();
-                const raceMult = 1.0 + 0.01 * totalSaihou;
-                const statGain = Math.floor(raceMult * gradeData.stat_bonus);
-                const spGain = Math.floor(raceMult * gradeData.sp_bonus);
+                const isConfident = this.raceConfident[state.turn];
+                const placementTable = isConfident ? PLACEMENT_CONFIDENT : PLACEMENT_NORMAL;
+                const placementRoll = Math.random() * 100;
+                let placement;
+                if (placementRoll < placementTable[0]) {
+                    placement = RACE_PLACEMENT_VICTORY;
+                } else if (placementRoll < placementTable[0] + placementTable[1]) {
+                    placement = RACE_PLACEMENT_SOLID;
+                } else {
+                    placement = RACE_PLACEMENT_DEFEAT;
+                }
+                let isTop = false;
+                if (placement === RACE_PLACEMENT_VICTORY && state.vital > REST_THRESHOLD) {
+                    const topChance = isConfident ? TOP_TRIGGER_CONFIDENT : TOP_TRIGGER_NORMAL;
+                    if (Math.random() * 100 < topChance) {
+                        isTop = true;
+                    }
+                }
+                const rewardTable = RACE_REWARDS[placement];
+                const reward = isTop ? rewardTable.top : rewardTable.bot;
+                let energyCost = isTop ? reward.energy : (Math.random() < 0.5 ? reward.energy_a : reward.energy_b);
+                let statGain, spGain;
+                if (grade === 'G1') {
+                    statGain = reward.g1[0];
+                    spGain = reward.g1[1];
+                } else if (grade === 'G23') {
+                    statGain = reward.g23[0];
+                    spGain = reward.g23[1];
+                } else {
+                    statGain = reward.op[0];
+                    spGain = reward.op[1];
+                }
+                let totalRaceBonus = this.deckCards.reduce((s, c) => s + c.race_bonus, 0);
+                totalRaceBonus += this.effectCalculator.get_race_bonus();
+                const raceMult = 1.0 + 0.01 * totalRaceBonus;
+                statGain = Math.floor(statGain * raceMult);
+                spGain = Math.floor(spGain * raceMult);
                 for (let i = 0; i < 5; i++) {
-                    state.add_status(i, statGain + 1);
+                    state.add_status(i, statGain);
                 }
                 state.add_skill_pt(spGain);
-                state.add_vital(-20);
+                state.add_vital(energyCost);
                 if (Math.random() < 0.10) {
                     state.add_motivation(1);
                 }
                 raceCounts++;
+                if (placement === RACE_PLACEMENT_VICTORY && state.otonashi_appeared) {
+                    const elatedChance = isConfident ? ELATED_COVERAGE_CONFIDENT : ELATED_COVERAGE_NORMAL;
+                    if (Math.random() < elatedChance) {
+                        state.add_vital(-15);
+                        state.add_motivation(1);
+                        let elatStatGain, elatSpGain;
+                        if (grade === 'G1') {
+                            elatStatGain = RACE_REWARDS[RACE_PLACEMENT_SOLID].top.g1[0];
+                            elatSpGain = RACE_REWARDS[RACE_PLACEMENT_SOLID].top.g1[1];
+                        } else if (grade === 'G23') {
+                            elatStatGain = RACE_REWARDS[RACE_PLACEMENT_SOLID].top.g23[0];
+                            elatSpGain = RACE_REWARDS[RACE_PLACEMENT_SOLID].top.g23[1];
+                        } else {
+                            elatStatGain = RACE_REWARDS[RACE_PLACEMENT_SOLID].top.op[0];
+                            elatSpGain = RACE_REWARDS[RACE_PLACEMENT_SOLID].top.op[1];
+                        }
+                        for (let i = 0; i < 5; i++) {
+                            state.add_status(i, elatStatGain);
+                        }
+                        state.add_skill_pt(elatSpGain);
+                        state.otonashi_bond += 15;
+                    }
+                }
             } else {
                 const {operation, trainType} = scorer.decideOperation(state, distribution);
                 if (operation === 'medic') {
@@ -2090,6 +2297,7 @@ class SimulationEngine {
                     state.medic_uses_remaining -= 1;
                     state.last_medic_turn = state.turn;
                     medicCounts++;
+                    state.remove_status_effect(PRACTICE_POOR);
                 } else if (operation === 'trip') {
                     state.add_vital(30);
                     state.add_motivation(1);
@@ -2197,6 +2405,16 @@ class SimulationEngine {
         raceCounts++;
         for (let i = 0; i < 5; i++) state.add_status(i, 45);
         state.add_skill_pt(20);
+        if (state.otonashi_bond >= 80) {
+            for (let i = 0; i < 5; i++) {
+                state.add_status(i, 3);
+            }
+        }
+        if (state.otonashi_bond >= 100) {
+            for (let i = 0; i < 5; i++) {
+                state.add_status(i, 2);
+            }
+        }
         return {
             finalStats: [...state.fiveStatus],
             skillPoints: state.skillPt,
@@ -2399,7 +2617,7 @@ class SimulationEngine {
     }
 }
 function runSimulation(deckData, numSimulations = 11, maxTurns = 72, raceSchedule = [],
-                       statBonus = [0, 0, 0, 0, 0], startingStats = [88, 88, 88, 88, 88]) {
+                       statBonus = [0, 0, 0, 0, 0], startingStats = [88, 88, 88, 88, 88], confident = true) {
     numSimulations = Math.min(99999, Math.max(1, numSimulations));
     maxTurns = Math.min(78, Math.max(20, maxTurns));
     const engine = new SimulationEngine(deckData, [], [], {
@@ -2407,7 +2625,8 @@ function runSimulation(deckData, numSimulations = 11, maxTurns = 72, raceSchedul
         maxTurns,
         raceSchedule,
         statBonus,
-        startingStats
+        startingStats,
+        confident
     });
     return engine.runSimulations();
 }
