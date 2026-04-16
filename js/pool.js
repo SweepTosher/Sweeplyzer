@@ -159,7 +159,13 @@ window.aggregateAllRuns = function (allChunks, totalSims, maxTurns, deckSize) {
     };
 };
 
-window.runSimPool = function (deckData, cardsData, uniqueEffectsData, options, onProgress, onComplete) {
+window.runSimPool = function (config) {
+    var deckData = config.deckData;
+    var cardsData = config.cardsData;
+    var uniqueEffectsData = config.uniqueEffectsData;
+    var options = config.options;
+    var onProgress = config.onProgress;
+    var onComplete = config.onComplete;
     var totalSims = options.numSimulations;
     var numWorkers = navigator.hardwareConcurrency || 4;
     var simsPerWorker = Math.ceil(totalSims / numWorkers);
@@ -175,7 +181,7 @@ window.runSimPool = function (deckData, cardsData, uniqueEffectsData, options, o
             var count = Math.min(simsPerWorker, totalSims - offset);
             if (count <= 0) break;
 
-            var worker = new Worker('js/sim/worker.js');
+            var worker = new Worker(config.workerPath || 'js/sim/worker.js');
             workers.push(worker);
         }
     };
@@ -249,13 +255,18 @@ window.runSimPool = function (deckData, cardsData, uniqueEffectsData, options, o
     });
 };
 
-window.runRankPool = function (candidates, cardsData, uniqueEffectsData, onCardDone, onAllDone) {
+window.runRankPool = function (config) {
+    var candidates = config.candidates;
+    var cardsData = config.cardsData;
+    var uniqueEffectsData = config.uniqueEffectsData;
+    var onCardDone = config.onCardDone;
+    var onAllDone = config.onAllDone;
     var workers = [];
     var total = candidates.length;
     var completed = 0;
 
     for (var i = 0; i < candidates.length; i++) {
-        var worker = new Worker('js/sim/worker.js');
+        var worker = new Worker(config.workerPath || 'js/sim/worker.js');
         workers.push(worker);
     }
 
