@@ -263,7 +263,8 @@ window.runRankPool = function (config) {
     var onAllDone = config.onAllDone;
     var total = candidates.length;
     var completed = 0;
-    var numWorkers = Math.min(candidates.length, navigator.hardwareConcurrency || 4);
+    var allDone = false;
+    var numWorkers = Math.min(candidates.length, 2);
     var workers = [];
     var nextCandidateIdx = 0;
 
@@ -305,9 +306,6 @@ window.runRankPool = function (config) {
         worker.onmessage = function(e) {
             if (e.data.type === 'ready') {
                 scheduleRun(worker);
-                if (nextCandidateIdx >= candidates.length && !worker.hasMore) {
-                    worker.removeEventListener('message', worker.onmessage);
-                }
                 return;
             }
             if (e.data.type === 'result') {
@@ -326,12 +324,10 @@ window.runRankPool = function (config) {
                 onCardDone(cardResult, completed, total);
                 if (nextCandidateIdx < candidates.length) {
                     processNext(worker);
-                } else {
-                    worker.hasMore = false;
-                    if (completed >= total) {
-                        for (var w = 0; w < workers.length; w++) workers[w].terminate();
-                        onAllDone();
-                    }
+                } else if (completed >= total && !allDone) {
+                    allDone = true;
+                    workers.forEach(function(w) { w.terminate(); });
+                    onAllDone();
                 }
             }
         };

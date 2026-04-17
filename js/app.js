@@ -707,8 +707,7 @@ document.getElementById('btnRank').onclick=async function(){
                     let rankedResults=results.map(r=>{
                         let c=allCards.find(x=>x.id===r.cardId);
                         let avg=r.avg_stats;
-                        let avgScore=avg.speed+avg.stamina+avg.power+avg.guts+avg.wisdom+r.avg_skill_points/2;
-                        return{baseId:r.cardId,lb:r.cardLb,card:c,avgScore,avg,avgSp:r.avg_skill_points};
+                        return{baseId:r.cardId,lb:r.cardLb,card:c,avgScore:r.avg_total,avg,avgSp:r.avg_skill_points};
                     });
                     rankedResults.sort((a,b)=>b.avgScore-a.avgScore);
                     cardRankings=rankedResults;
