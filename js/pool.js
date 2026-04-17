@@ -261,72 +261,83 @@ window.runRankPool = function (config) {
     var uniqueEffectsData = config.uniqueEffectsData;
     var onCardDone = config.onCardDone;
     var onAllDone = config.onAllDone;
-    var workers = [];
     var total = candidates.length;
     var completed = 0;
+    var numWorkers = Math.min(candidates.length, navigator.hardwareConcurrency || 4);
+    var workers = [];
+    var nextCandidateIdx = 0;
 
-    for (var i = 0; i < candidates.length; i++) {
+    for (var i = 0; i < numWorkers; i++) {
         var worker = new Worker(config.workerPath || 'js/sim/worker.js');
         workers.push(worker);
     }
 
-    var initPromises = workers.map(function (worker, idx) {
-        return new Promise(function (resolve) {
-            var candidate = candidates[idx];
-            var readyHandler = function (e) {
-                if (e.data.type === 'ready') {
-                    worker.removeEventListener('message', readyHandler);
-                    resolve();
-                }
-            };
-            worker.addEventListener('message', readyHandler);
-
-            worker.postMessage({
-                type: 'init',
-                data: {
-                    deckData: candidate.deckData,
-                    cardsData: cardsData,
-                    uniqueEffectsData: uniqueEffectsData,
-                    options: candidate.options,
-                    cardId: candidate.cardId,
-                    cardLb: candidate.cardLb
-                }
-            });
+    var processNext = function(worker) {
+        if (nextCandidateIdx >= candidates.length) return false;
+        var idx = nextCandidateIdx++;
+        var candidate = candidates[idx];
+        worker.currentIdx = idx;
+        worker.postMessage({
+            type: 'init',
+            data: {
+                deckData: candidate.deckData,
+                cardsData: cardsData,
+                uniqueEffectsData: uniqueEffectsData,
+                options: candidate.options,
+                cardId: candidate.cardId,
+                cardLb: candidate.cardLb
+            }
         });
+        return true;
+    };
+
+    var scheduleRun = function(worker) {
+        var idx = worker.currentIdx;
+        if (idx === undefined) return;
+        var candidate = candidates[idx];
+        worker.postMessage({
+            type: 'run',
+            data: { offset: 0, count: candidate.options.numSimulations, max_turns: candidate.options.maxTurns }
+        });
+    };
+
+    workers.forEach(function(worker) {
+        worker.onmessage = function(e) {
+            if (e.data.type === 'ready') {
+                scheduleRun(worker);
+                if (nextCandidateIdx >= candidates.length && !worker.hasMore) {
+                    worker.removeEventListener('message', worker.onmessage);
+                }
+                return;
+            }
+            if (e.data.type === 'result') {
+                var idx = worker.currentIdx;
+                var data = e.data.data;
+                var result = window.aggregateAllRuns([data], data.count, candidates[idx].options.maxTurns, candidates[idx].deckData.length);
+                var avgTotal = result.avg_stats.speed + result.avg_stats.stamina + result.avg_stats.power + result.avg_stats.guts + result.avg_stats.wisdom + result.avg_skill_points / 2;
+                var cardResult = {
+                    cardId: candidates[idx].cardId,
+                    cardLb: candidates[idx].cardLb,
+                    avg_stats: result.avg_stats,
+                    avg_skill_points: result.avg_skill_points,
+                    avg_total: avgTotal
+                };
+                completed++;
+                onCardDone(cardResult, completed, total);
+                if (nextCandidateIdx < candidates.length) {
+                    processNext(worker);
+                } else {
+                    worker.hasMore = false;
+                    if (completed >= total) {
+                        for (var w = 0; w < workers.length; w++) workers[w].terminate();
+                        onAllDone();
+                    }
+                }
+            }
+        };
     });
 
-    Promise.all(initPromises).then(function () {
-        for (var i = 0; i < workers.length; i++) {
-            var candidate = candidates[i];
-
-            workers[i].onmessage = (function (idx) {
-                return function (e) {
-                    if (e.data.type === 'ready') return;
-                    if (e.data.type === 'result') {
-                        var data = e.data.data;
-                        var result = window.aggregateAllRuns([data], data.count, candidates[idx].options.maxTurns, candidates[idx].deckData.length);
-                        var avgTotal = result.avg_stats.speed + result.avg_stats.stamina + result.avg_stats.power + result.avg_stats.guts + result.avg_stats.wisdom + result.avg_skill_points / 2;
-                        var cardResult = {
-                            cardId: candidates[idx].cardId,
-                            cardLb: candidates[idx].cardLb,
-                            avg_stats: result.avg_stats,
-                            avg_skill_points: result.avg_skill_points,
-                            avg_total: avgTotal
-                        };
-                        completed++;
-                        onCardDone(cardResult, completed, total);
-                        if (completed >= total) {
-                            for (var w = 0; w < workers.length; w++) workers[w].terminate();
-                            onAllDone();
-                        }
-                    }
-                };
-            })(i);
-
-            workers[i].postMessage({
-                type: 'run',
-                data: { offset: 0, count: candidate.options.numSimulations, max_turns: candidate.options.maxTurns }
-            });
-        }
+    workers.forEach(function(worker) {
+        processNext(worker);
     });
 };
