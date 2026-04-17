@@ -725,7 +725,18 @@ document.getElementById('btnRank').onclick=async function(){
                 }
             }
         });
-    }catch(e){document.getElementById('results').innerHTML=`<div style="color:#ef4444;padding:1rem">Error: ${e}</div>`;this.disabled=false;this.textContent='Rank Pool';}
-};
+        }catch(e){document.getElementById('results').innerHTML=`<div style="color:#ef4444;padding:1rem">Error: ${e}</div>`;this.disabled=false;this.textContent='Rank Pool';}
+    }
+
+    const scrollTopBtn=Object.assign(document.createElement('button'),{innerHTML:'&#x25B2;',title:'Scroll to top',style:'position:fixed;bottom:80px;right:16px;width:44px;height:44px;border-radius:50%;background:var(--accent,#45c2e5);color:#000;border:none;font-size:20px;cursor:pointer;z-index:9999;display:none;box-shadow:0 4px 12px rgba(0,0,0,.3);opacity:0.8',onclick:()=>window.scrollTo({top:0,behavior:'smooth'})});
+    const scrollBottomBtn=Object.assign(document.createElement('button'),{innerHTML:'&#x25BC;',title:'Scroll to bottom',style:'position:fixed;bottom:16px;right:16px;width:44px;height:44px;border-radius:50%;background:var(--accent,#45c2e5);color:#000;border:none;font-size:20px;cursor:pointer;z-index:9999;display:none;box-shadow:0 4px 12px rgba(0,0,0,.3);opacity:0.8',onclick:()=>window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})});
+    document.body.append(scrollTopBtn,scrollBottomBtn);
+    let scrollTimeout;
+    window.addEventListener('scroll',function(){
+        scrollTopBtn.style.display=window.scrollY>300?'block':'none';
+        scrollBottomBtn.style.display=window.innerHeight+window.scrollY<document.body.scrollHeight-100?'block':'none';
+        clearTimeout(scrollTimeout);
+        scrollTimeout=setTimeout(()=>{scrollTopBtn.style.display='none';scrollBottomBtn.style.display='none';},3000);
+    },{passive:true});
 
 init();
