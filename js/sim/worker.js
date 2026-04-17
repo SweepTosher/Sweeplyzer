@@ -24,6 +24,7 @@ const TRAINING_BASIC_VALUE = [ [[8,0,4,0,0,2,-19],[9,0,4,0,0,2,-20],[10,0,4,0,0,
 const FAIL_RATE_BASIC = [[520, 524, 528, 532, 536],[507, 511, 515, 519, 523],[516, 520, 524, 528, 532],[532, 536, 540, 544, 548],[320, 321, 322, 323, 324]];
 const SUMMER_CONSERVE_DATES = [35, 36, 59, 60], SUMMER_CONSERVE_ENERGY = 60;
 const FAVOR_LEVEL_1 = 1, FAVOR_LEVEL_2 = 2, FAVOR_LEVEL_3 = 3, FAVOR_LEVEL_4 = 4;
+const SUMMER = new Set([37, 38, 39, 40, 61, 62, 63, 64]);
 function getFavorLevel(bond) { if (bond >= 100) return FAVOR_LEVEL_4; else if (bond >= 80) return FAVOR_LEVEL_3; else if (bond >= 60) return FAVOR_LEVEL_2; return FAVOR_LEVEL_1; }
 const DEFAULT_BASE_SCORES = [0.0, 0.0, 0.0, 0.0, 0.07];
 const DEFAULT_SCORE_VALUE = [[0.11, 0.10, 0.0025, 0.09],[0.11, 0.10, 0.0225, 0.09],[0.11, 0.10, 0.03, 0.09],[0.03, 0.05, 0.0375, 0.09],[0, 0, 0.0675, 0]];
@@ -330,6 +331,7 @@ class TrainingScorer {
     }
     decideOperation(state, distribution) {
         const energy = state.vital, date = state.turn, medicAvailable = state.medic_room_available;
+        if (SUMMER.has(date)) return { operation: 'SUMMER_RECREATION', trainType: TRA_NONE };
         let moodThreshold;
         if (date <= 36) moodThreshold = DEFAULT_MOTIVATION_THRESHOLD_YEAR1;
         else if (date <= 60) moodThreshold = DEFAULT_MOTIVATION_THRESHOLD_YEAR2;
@@ -423,7 +425,7 @@ class SimulationEngine {
         const scorer = new TrainingScorer(this.deckCards, this.effectCalculator);
         const cardEventsFired = Array(this.deckCards.length).fill(null).map(() => []);
         const trainingCounts = [0, 0, 0, 0, 0], operationCountsTimeline = [];
-        let restCounts = 0, medicCounts = 0, tripCounts = 0, raceCounts = 0, totalFailures = 0, eventsTriggered = 0;
+        let restCounts = 0, medicCounts = 0, tripCounts = 0, raceCounts = 0, summerCounts = 0, totalFailures = 0, eventsTriggered = 0;
         const facilityPresses = [0, 0, 0, 0, 0], facilityLevels = [1, 1, 1, 1, 1];
         const cardPressesByFacility = [Array(this.deckCards.length).fill(0), Array(this.deckCards.length).fill(0), Array(this.deckCards.length).fill(0), Array(this.deckCards.length).fill(0), Array(this.deckCards.length).fill(0)];
         const cardPressesByFacilityTimeline = [];
@@ -481,6 +483,12 @@ class SimulationEngine {
                 if (operation === 'medic') { state.add_vital(MEDIC_ENERGY_RECOVERY); state.medic_uses_remaining -= 1; state.last_medic_turn = state.turn; medicCounts++; if (state.has_negative_condition() && Math.random() < MEDIC_CURE_CHANCE) state.remove_random_negative(); }
                 else if (operation === 'trip') { state.add_vital(30); state.add_motivation(1); tripCounts++; }
                 else if (operation === 'rest') { state.add_vital(50); restCounts++; }
+                else if (operation === 'SUMMER_RECREATION') {
+                    state.add_vital(40);
+                    state.add_motivation(1);
+                    if (Math.random() < 0.5 && state.has_negative_condition()) state.remove_random_negative();
+                    summerCounts++;
+                }
                 else if (operation === 'train') {
                     const cardsAt = distribution[trainType] || []; trainingCounts[trainType]++;
                     for (const ci of cardsAt) cardPressesByFacility[trainType][ci]++;
@@ -521,7 +529,7 @@ class SimulationEngine {
                 else if (rd < 43) { state.add_vital(20); for (let i = 0; i < 5; i++) state.add_status(i, 5); state.add_motivation(1); }
                 else { state.add_vital(20); }
             }
-            trainingCountsTimeline.push([...trainingCounts]); operationCountsTimeline.push([restCounts, medicCounts, tripCounts, raceCounts]);
+            trainingCountsTimeline.push([...trainingCounts]); operationCountsTimeline.push([restCounts, medicCounts, tripCounts, raceCounts, summerCounts]);
             cumulativeCardAppearancesTimeline.push(cumulativeCardAppearances.map(f => [...f]));
             state.turn++;
         }
@@ -531,7 +539,7 @@ class SimulationEngine {
         for (let i = 0; i < 5; i++) state.add_status(i, 45); state.add_skill_pt(20);
         if (state.otonashi_bond >= 80) for (let i = 0; i < 5; i++) state.add_status(i, 3);
         if (state.otonashi_bond >= 100) for (let i = 0; i < 5; i++) state.add_status(i, 2);
-        return { finalStats: [...state.fiveStatus], skillPoints: state.skillPt, turnsCompleted: state.turn, trainingCounts, restCounts, medicCounts, tripCounts, raceCounts, totalFailures, eventsTriggered, statHistory, spHistory, facilityPresses, facilityLevels, facilityLevelsTimeline, trainingCountsTimeline, operationCountsTimeline, cardPressesByFacility, cardPressesByFacilityTimeline, cumulativeCardAppearancesTimeline };
+        return { finalStats: [...state.fiveStatus], skillPoints: state.skillPt, turnsCompleted: state.turn, trainingCounts, restCounts, medicCounts, tripCounts, raceCounts, summerCounts, totalFailures, eventsTriggered, statHistory, spHistory, facilityPresses, facilityLevels, facilityLevelsTimeline, trainingCountsTimeline, operationCountsTimeline, cardPressesByFacility, cardPressesByFacilityTimeline, cumulativeCardAppearancesTimeline };
     }
     runSimulationsChunk(offset, count) {
         const results = [];
