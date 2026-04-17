@@ -701,26 +701,30 @@ document.getElementById('btnRank').onclick=async function(){
                 document.getElementById('pt').textContent=completed+' / '+total+' cards ranked';
             },
             onAllDone:function(){
-                let results = rankCompletedResults;
-                results.sort((a,b)=>b.avg_total-a.avg_total);
-                let rankedResults=results.map(r=>{
-                    let c=allCards.find(x=>x.id===r.card_id);
-                    let avg=r.avg_stats;
-                    let avgScore=avg.speed+avg.stamina+avg.power+avg.guts+avg.wisdom+r.avg_skill_points/2;
-                    return{baseId:r.card_id,lb:r.card_lb,card:c,avgScore,avg,avgSp:r.avg_skill_points};
-                });
-                rankedResults.sort((a,b)=>b.avgScore-a.avgScore);
-                cardRankings=rankedResults;
-                renderRankSort();
-                document.getElementById('results').innerHTML=`<div class="results">
-                    <h3>Card Ranking</h3>
-                    ${rankedResults.slice(0,10).map((r,i)=>`<div class="result-row">
-                        <span class="result-label" style="font-weight:700">${i+1}. ${r.card.title} LB${r.lb}</span>
-                        <span class="result-value">${r.avgScore.toFixed(1)}</span>
-                    </div>`).join('')}
-                </div>`;
-                document.getElementById('btnRank').disabled=false;
-                document.getElementById('btnRank').textContent='Rank Pool';
+                try {
+                    let results = rankCompletedResults;
+                    results.sort((a,b)=>b.avg_total-a.avg_total);
+                    let rankedResults=results.map(r=>{
+                        let c=allCards.find(x=>x.id===r.card_id);
+                        if (!c) c = {title: 'Unknown Card (ID: '+r.card_id+')', image_url: ''};
+                        let avg=r.avg_stats;
+                        let avgScore=avg.speed+avg.stamina+avg.power+avg.guts+avg.wisdom+r.avg_skill_points/2;
+                        return{baseId:r.card_id,lb:r.card_lb,card:c,avgScore,avg,avgSp:r.avg_skill_points};
+                    });
+                    rankedResults.sort((a,b)=>b.avgScore-a.avgScore);
+                    cardRankings=rankedResults;
+                    renderRankSort();
+                    document.getElementById('results').innerHTML=`<div class="results">
+                        <h3>Card Ranking</h3>
+                        ${rankedResults.slice(0,10).map((r,i)=>`<div class="result-row">
+                            <span class="result-label" style="font-weight:700">${i+1}. ${r.card.title} LB${r.lb}</span>
+                            <span class="result-value">${r.avgScore.toFixed(1)}</span>
+                        </div>`).join('')}
+                    </div>`;
+                } finally {
+                    document.getElementById('btnRank').disabled=false;
+                    document.getElementById('btnRank').textContent='Rank Pool';
+                }
             }
         });
     }catch(e){document.getElementById('results').innerHTML=`<div style="color:#ef4444;padding:1rem">Error: ${e}</div>`;this.disabled=false;this.textContent='Rank Pool';}
