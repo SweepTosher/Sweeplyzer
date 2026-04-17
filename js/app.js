@@ -705,11 +705,10 @@ document.getElementById('btnRank').onclick=async function(){
                     let results = rankCompletedResults;
                     results.sort((a,b)=>b.avg_total-a.avg_total);
                     let rankedResults=results.map(r=>{
-                        let c=allCards.find(x=>x.id===r.card_id);
-                        if (!c) c = {title: 'Unknown Card (ID: '+r.card_id+')', image_url: ''};
+                        let c=allCards.find(x=>x.id===r.cardId);
                         let avg=r.avg_stats;
                         let avgScore=avg.speed+avg.stamina+avg.power+avg.guts+avg.wisdom+r.avg_skill_points/2;
-                        return{baseId:r.card_id,lb:r.card_lb,card:c,avgScore,avg,avgSp:r.avg_skill_points};
+                        return{baseId:r.cardId,lb:r.cardLb,card:c,avgScore,avg,avgSp:r.avg_skill_points};
                     });
                     rankedResults.sort((a,b)=>b.avgScore-a.avgScore);
                     cardRankings=rankedResults;
