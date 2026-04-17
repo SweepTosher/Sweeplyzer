@@ -61,9 +61,10 @@ window.aggregateAllRuns = function (allChunks, totalSims, maxTurns, deckSize) {
     var avgMedic = allRuns.reduce(function (a, r) { return a + r.medicCounts; }, 0) / n;
     var avgTrip = allRuns.reduce(function (a, r) { return a + r.tripCounts; }, 0) / n;
     var avgRace = allRuns.reduce(function (a, r) { return a + r.raceCounts; }, 0) / n;
+    var avgSummer = allRuns.reduce(function (a, r) { return a + r.summerCounts; }, 0) / n;
     var avgFailures = allRuns.reduce(function (a, r) { return a + r.totalFailures; }, 0) / n;
     var totalTraining = avgTrainingCounts.reduce(function (a, b) { return a + b; }, 0);
-    var totalNonTraining = avgRest + avgMedic + avgTrip + avgRace;
+    var totalNonTraining = avgRest + avgMedic + avgTrip + avgRace + avgSummer;
     var maxTurnHist = Math.max.apply(null, allRuns.map(function (r) { return r.statHistory ? r.statHistory.length : 0; }));
     var avgStatHistory = [];
     var avgFacilityLevels = [];
@@ -127,7 +128,8 @@ window.aggregateAllRuns = function (allChunks, totalSims, maxTurns, deckSize) {
             turnData.reduce(function (a, r) { return a + r.operationCountsTimeline[t][0]; }, 0) / turnData.length,
             turnData.reduce(function (a, r) { return a + r.operationCountsTimeline[t][1]; }, 0) / turnData.length,
             turnData.reduce(function (a, r) { return a + r.operationCountsTimeline[t][2]; }, 0) / turnData.length,
-            turnData.reduce(function (a, r) { return a + r.operationCountsTimeline[t][3]; }, 0) / turnData.length
+            turnData.reduce(function (a, r) { return a + r.operationCountsTimeline[t][3]; }, 0) / turnData.length,
+            turnData.reduce(function (a, r) { return a + r.operationCountsTimeline[t][4]; }, 0) / turnData.length
         ]);
     }
     return {
@@ -142,6 +144,7 @@ window.aggregateAllRuns = function (allChunks, totalSims, maxTurns, deckSize) {
         avg_medic: avgMedic,
         avg_trip: avgTrip,
         avg_race: avgRace,
+        avg_summer: avgSummer,
         avg_failures: avgFailures,
         total_training_turns: totalTraining,
         total_non_training_turns: totalNonTraining,
