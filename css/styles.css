@@ -115,7 +115,7 @@ h1{font-size:1.5rem;font-weight:900;color:var(--accent)}
 .stat-bonus-row .stat-val{color:var(--accent);font-weight:700;width:2rem;text-align:right}
 .starting-row{display:flex;align-items:center;gap:.4rem;margin-top:.2rem;font-size:.75rem}
 .starting-row .stat-label-s{width:3.5rem;color:var(--muted);font-weight:700;text-transform:uppercase}
-.starting-row input[type=number]{background:var(--surface);border:1px solid rgba(255,255,255,.2);border-radius:4px;color:var(--accent);font-weight:700;width:3rem;padding:.15rem .3rem;font-size:.75rem;text-align:center}
+.starting-row input[type=number]{background:var(--surface);border:1px solid rgba(255,255,255,.2);border-radius:4px;color:var(--accent);font-weight:700;width:4.5rem;padding:.15rem .3rem;font-size:.75rem;text-align:center}
 .view-toggle{display:flex;gap:.25rem;margin-bottom:.75rem}
 .btn-toggle{background:transparent;border:1px solid rgba(255,255,255,.2);color:var(--muted);padding:.3rem .8rem;border-radius:4px;cursor:pointer;font-size:.8rem;font-weight:600}
 .btn-toggle:hover{border-color:var(--accent);color:var(--accent)}
