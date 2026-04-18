@@ -92,6 +92,10 @@ h1{font-size:1.5rem;font-weight:900;color:var(--accent)}
 .race-cell.OP{background:#22c55e;color:#000}
 .race-cell.summer{background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.4)}
 .race-cell[data-confident="false"]{border:2px solid #ef4444}
+.race-cell.mandatory{opacity:0.85;cursor:not-allowed !important}
+.race-cell.mandatory::after{content:'🔒';position:absolute;font-size:0.5rem;top:1px;right:1px}
+.race-cell.G0{background:#ec4899;color:#fff}
+.race-cell.mandatory{position:relative}
 .race-grade-sel{display:flex;gap:.3rem;margin-top:.3rem}
 .race-grade-btn{padding:.2rem .6rem;border-radius:4px;border:1px solid rgba(255,255,255,.2);background:transparent;color:var(--muted);cursor:pointer;font-size:.75rem;font-weight:700}
 .race-grade-btn:hover{border-color:var(--accent)}

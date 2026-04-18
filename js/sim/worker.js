@@ -116,8 +116,6 @@ function parseUniqueEffect(effectData) {
     if (ue.id === 'ue_32') ue.training_effectiveness = 5;
     if (ue.id === 'ue_37') ue.training_effectiveness = 5;
     if (ue.id === 'ue_39') ue.initial_friendship_gauge = 5;
-    if (ue.id === 'ue_43') ue.specialty_priority = 30;
-    if (ue.id === 'ue_50') ue.specialty_priority = 50;
     if (ue.id === 'ue_59') { ue.initial_speed = 10; ue.initial_stamina = 10; ue.initial_power = 10; ue.initial_guts = 10; ue.initial_wits = 10; }
     if (ue.id === 'ue_60') ue.training_effectiveness = 5;
     if (ue.id === 'ue_62') ue.training_effectiveness = 5;
@@ -137,7 +135,7 @@ function _parsePart(text, ue) {
     const t = text.trim().toLowerCase();
     const pctMatch = t.match(/\((\d+)%\)/), intMatch = t.match(/\((\d+)\)/);
     const pctVal = pctMatch ? parseInt(pctMatch[1]) : 0, intVal = intMatch ? parseInt(intMatch[1]) : 0;
-    if (t.includes('training effectiveness') || t.includes('increased training') || (t.includes('effectiveness of') && t.includes('training'))) { if (pctVal > 0) ue.training_effectiveness += pctVal; else if (intVal > 0) ue.training_effectiveness += intVal; return; }
+    if (t.includes('training effectiveness') || t.includes('increased training') || (t.includes('effectiveness of') && t.includes('training'))) { if (pctVal > 0) ue.training_effectiveness += pctVal; else if (intVal > 0) ue.training_effectiveness += intVal; if (t.includes('friendship')) ue.friendship_bonus += pctVal || intVal; return; }
     if (t.includes('friendship bonus')) { ue.friendship_bonus += intVal || pctVal; return; }
     if (t.includes('mood effect') || t.includes('amplifies the effect of mood')) { ue.mood_effect += pctVal || intVal; return; }
     for (const [statName, statIdx] of Object.entries(STAT_NAME_MAP)) {

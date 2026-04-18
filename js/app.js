@@ -11,99 +11,290 @@ let rankCompletedResults=[];
 let rankTotalCandidates=0;
 
 function getVal(card,l,k){return ((card.effects||[])[l]||{})[k]||0;}
-function getCombinedCardStats(card, lb) {
+
+function parseUEPart(p, ueData) {
+    const t = p.toLowerCase().trim();
+    const pctMatch = t.match(/\((\d+)%\)/), intMatch = t.match(/\((\d+)\)/);
+    const pctVal = pctMatch ? parseInt(pctMatch[1]) : 0, intVal = intMatch ? parseInt(intMatch[1]) : 0;
+    if (t.includes('training effectiveness') || t.includes('increased training') || (t.includes('effectiveness of') && t.includes('training'))) { if (pctVal > 0) ueData.training_effectiveness += pctVal; else if (intVal > 0) ueData.training_effectiveness += intVal; if (t.includes('friendship')) ueData.friendship_bonus += pctVal || intVal; return; }
+    if (t.includes('friendship bonus')) { ueData.friendship_bonus += intVal || pctVal; return; }
+    if (t.includes('mood effect') || t.includes('amplifies the effect of mood')) { ueData.mood_effect += pctVal || intVal; return; }
+    const STAT_NAME_MAP = {speed:0, stamina:1, power:2, guts:3, wit:4};
+    for (const [statName, statIdx] of Object.entries(STAT_NAME_MAP)) {
+        if (t.includes(`${statName} gain`) || t.includes(`gain ${statName}`) || t.includes(`gain ${statName} bonus`)) {
+            const bonus = intVal || pctVal;
+            if (statIdx === 0) ueData.speed_bonus += bonus; else if (statIdx === 1) ueData.stamina_bonus += bonus; else if (statIdx === 2) ueData.power_bonus += bonus; else if (statIdx === 3) ueData.guts_bonus += bonus; else if (statIdx === 4) ueData.wits_bonus += bonus;
+            return;
+        }
+    }
+    if (t.includes('speed bonus')) { ueData.speed_bonus += intVal; return; }
+    if (t.includes('stamina bonus')) { ueData.stamina_bonus += intVal; return; }
+    if (t.includes('power bonus')) { ueData.power_bonus += intVal; return; }
+    if (t.includes('guts bonus')) { ueData.guts_bonus += intVal; return; }
+    if (t.includes('wit bonus')) { ueData.wits_bonus += intVal; return; }
+    if (t.includes('all stats bonus')) { ueData.speed_bonus += intVal; ueData.stamina_bonus += intVal; ueData.power_bonus += intVal; ueData.guts_bonus += intVal; ueData.wits_bonus += intVal; return; }
+    if (t.includes('skill point bonus')) { ueData.skill_point_bonus += intVal; return; }
+    if (t.includes('initial speed')) { ueData.initial_speed += intVal; return; }
+    if (t.includes('initial stamina')) { ueData.initial_stamina += intVal; return; }
+    if (t.includes('initial power')) { ueData.initial_power += intVal; return; }
+    if (t.includes('initial guts')) { ueData.initial_guts += intVal; return; }
+    if (t.includes('initial wit')) { ueData.initial_wits += intVal; return; }
+    if (t.includes('initial friendship gauge') || t.includes('initial friendship')) { ueData.initial_friendship_gauge += intVal; return; }
+    if (t.includes('initial stat up')) { ueData.initial_speed += intVal; ueData.initial_stamina += intVal; ueData.initial_power += intVal; ueData.initial_guts += intVal; ueData.initial_wits += intVal; return; }
+    if (t.includes('decreases the probability of failure') || t.includes('failure when training')) { ueData.failure_rate_drop += pctVal || intVal; return; }
+    if (t.includes('decreases energy consumed') || t.includes('energy cost reduction') || t.includes('energy cost')) { ueData.vital_cost_drop += pctVal || intVal; return; }
+    if (t.includes('specialty priority')) { ueData.specialty_priority += intVal; return; }
+    if (t.includes('hint') && (t.includes('frequency') || t.includes('quantity'))) { ueData.hint_frequency += pctVal || intVal; return; }
+    if (t.includes('skill point') && t.includes('gain')) { ueData.skill_point_bonus += intVal; return; }
+    if (t.includes('stat gain from races')) { const raceMatch = t.match(/races\s*\((\d+)%\)/); if (raceMatch) ueData.race_bonus += parseInt(raceMatch[1]); return; }
+    if (t.includes('frequency at which the character participates in their preferred')) { ueData.specialty_priority += pctVal || intVal || 20; return; }
+    if (t.includes('frequency at which hint events occur')) { ueData.hint_frequency += pctVal || intVal; return; }
+    if (t.includes('bonus bond from training')) { ueData.initial_friendship_gauge += intVal; return; }
+}
+
+function getCardStats(card, lb) {
     if (!card) return null;
     const base = card.effects ? (card.effects[lb] || card.effects[card.effects.length - 1] || {}) : {};
     const ueId = card.unique_effect_id;
     const ue = ueId ? (uniqueEffectsData.find(u => u.id === ueId) || {}) : {};
     
-    let ueData = { training_effectiveness: 0, mood_effect: 0, failure_rate_drop: 0, vital_cost_drop: 0,
-        speed_bonus: 0, stamina_bonus: 0, power_bonus: 0, guts_bonus: 0, wits_bonus: 0, skill_point_bonus: 0,
-        initial_speed: 0, initial_stamina: 0, initial_power: 0, initial_guts: 0, initial_wits: 0 };
+    let bondThreshold = 0, bondText = '';
     if (ue && ue.text) {
         const t = ue.text.toLowerCase();
-        const statNames = ['speed', 'stamina', 'power', 'guts', 'wit'];
-        for (const stat of statNames) {
-            const regex = new RegExp(`${stat}.*?\\((\\d+)%?\\)`, 'i');
-            const match = t.match(regex);
-            if (match) {
-                const val = parseInt(match[1]);
-                ueData[`${stat}_bonus`] += val;
-            }
-        }
-        if (t.includes('friendship training')) {
-            const m = t.match(/(\d+)%/);
-            if (m) ueData.friendship_bonus = (ueData.friendship_bonus || 0) + parseInt(m[1]);
-        }
-        else if (t.includes('training effectiveness')) {
-            const m = t.match(/(\d+)%/);
-            if (m) ueData.training_effectiveness += parseInt(m[1]);
-        }
-        if (t.includes('mood effect')) {
-            const m = t.match(/(\d+)%/);
-            if (m) ueData.mood_effect += parseInt(m[1]);
-        }
-        if (t.includes('energy cost')) {
-            const m = t.match(/(\d+)%/);
-            if (m) ueData.vital_cost_drop += parseInt(m[1]);
-        }
-        if (t.includes('failure')) {
-            const m = t.match(/(\d+)%/);
-            if (m) ueData.failure_rate_drop += parseInt(m[1]);
-        }
-        if (t.includes('initial speed')) { const m = t.match(/initial speed[^)]*\)\s*\((\d+)\)/i); if (m) ueData.initial_speed += parseInt(m[1]); else { const m2 = t.match(/initial speed.*?\((\d+)\)/i); if (m2) ueData.initial_speed += parseInt(m2[1]); } }
-        if (t.includes('initial stamina')) { const m = t.match(/initial stamina[^)]*\)\s*\((\d+)\)/i); if (m) ueData.initial_stamina += parseInt(m[1]); else { const m2 = t.match(/initial stamina.*?\((\d+)\)/i); if (m2) ueData.initial_stamina += parseInt(m2[1]); } }
-        if (t.includes('initial power')) { const m = t.match(/initial power[^)]*\)\s*\((\d+)\)/i); if (m) ueData.initial_power += parseInt(m[1]); else { const m2 = t.match(/initial power.*?\((\d+)\)/i); if (m2) ueData.initial_power += parseInt(m2[1]); } }
-        if (t.includes('initial guts')) { const m = t.match(/initial guts[^)]*\)\s*\((\d+)\)/i); if (m) ueData.initial_guts += parseInt(m[1]); else { const m2 = t.match(/initial guts.*?\((\d+)\)/i); if (m2) ueData.initial_guts += parseInt(m2[1]); } }
-        if (t.includes('initial wit')) { const m = t.match(/initial wit[^)]*\)\s*\((\d+)\)/i); if (m) ueData.initial_wits += parseInt(m[1]); else { const m2 = t.match(/initial wit.*?\((\d+)\)/i); if (m2) ueData.initial_wits += parseInt(m2[1]); } }
+        if (t.includes('bond gauge is full')) { bondThreshold = 100; bondText = 'Full'; }
+        else if (t.includes('bond gauge is at least 80')) { bondThreshold = 80; bondText = '80+'; }
+        else if (t.includes('bond gauge is at least 60')) { bondThreshold = 60; bondText = '60+'; }
     }
     
-    if (ueId === 'ue_24') { ueData.speed_bonus += 1; ueData.stamina_bonus += 1; ueData.power_bonus += 1; ueData.guts_bonus += 1; ueData.wits_bonus += 1; }
-    if (ueId === 'ue_32') ueData.training_effectiveness += 5;
-    if (ueId === 'ue_37') ueData.training_effectiveness += 5;
-    if (ueId === 'ue_39') ueData.initial_friendship_gauge = (ueData.initial_friendship_gauge || 0) + 5;
-    if (ueId === 'ue_43') ueData.specialty_priority = (ueData.specialty_priority || 0) + 30;
-    if (ueId === 'ue_50') ueData.specialty_priority = (ueData.specialty_priority || 0) + 50;
-    if (ueId === 'ue_59') { ueData.initial_speed = (ueData.initial_speed || 0) + 10; ueData.initial_stamina += 10; ueData.initial_power += 10; ueData.initial_guts += 10; ueData.initial_wits += 10; }
-    if (ueId === 'ue_60') ueData.training_effectiveness += 5;
-    if (ueId === 'ue_62') ueData.training_effectiveness += 5;
-    if (ueId === 'ue_64') ueData.training_effectiveness += 5;
-    if (ueId === 'ue_65') ueData.training_effectiveness += 5;
-    if (ueId === 'ue_69') ueData.training_effectiveness += 15;
-    if (ueId === 'ue_71') ueData.failure_rate_drop += 20;
-    if (ueId === 'ue_73') ueData.friendship_bonus = (ueData.friendship_bonus || 0) + 10;
-    if (ueId === 'ue_79') ueData.training_effectiveness += 5;
-    if (ueId === 'ue_82') ueData.friendship_bonus = (ueData.friendship_bonus || 0) + 10;
-    if (ueId === 'ue_83') ueData.training_effectiveness += 10;
-    if (ueId === 'ue_85') ueData.training_effectiveness += 20;
-    if (ueId === 'ue_90') { ueData.friendship_bonus = (ueData.friendship_bonus || 0) + 10; ueData.training_effectiveness += 5; }
+    let ueData = { training_effectiveness: 0, mood_effect: 0, failure_rate_drop: 0, vital_cost_drop: 0,
+        speed_bonus: 0, stamina_bonus: 0, power_bonus: 0, guts_bonus: 0, wits_bonus: 0, skill_point_bonus: 0,
+        initial_speed: 0, initial_stamina: 0, initial_power: 0, initial_guts: 0, initial_wits: 0, friendship_bonus: 0,
+        specialty_priority: 0, hint_frequency: 0, race_bonus: 0 };
     
-    return {
-        speed_bonus: (base.speed_bonus || 0) + (ueData.speed_bonus || 0),
-        stamina_bonus: (base.stamina_bonus || 0) + (ueData.stamina_bonus || 0),
-        power_bonus: (base.power_bonus || 0) + (ueData.power_bonus || 0),
-        guts_bonus: (base.guts_bonus || 0) + (ueData.guts_bonus || 0),
-        wits_bonus: (base.wits_bonus || 0) + (ueData.wits_bonus || 0),
-        skill_point_bonus: (base.skill_point_bonus || 0) + (ueData.skill_point_bonus || 0),
-        training_effectiveness: (base.training_effectiveness || 0) + (ueData.training_effectiveness || 0),
-        mood_effect: (base.mood_effect || 0) + (ueData.mood_effect || 0),
-        failure_rate_drop: (base.failure_rate_drop || 0) + (ueData.failure_rate_drop || 0),
-        vital_cost_drop: (base.vital_cost_drop || 0) + (ueData.vital_cost_drop || 0),
+    if (ue && ue.text) {
+        const raw = ue.text;
+        let parts = [];
+        if (raw.includes(' and ') && !raw.trim().startsWith('If')) {
+            const andParts = raw.split(' and ');
+            parts = andParts.length === 2 ? [andParts[0].trim(), andParts[1].trim()] : [raw];
+        } else {
+            const splits = raw.split(/(?<=\))\s+(?=[A-Z])/);
+            parts = splits.length > 1 ? splits.map(s => s.trim()) : (raw.includes(';') ? raw.split(';').map(p => p.trim()) : [raw]);
+        }
+        for (const part of parts) parseUEPart(part, ueData);
+    }
+    
+    if (ueId === 'ue_24') { ueData.speed_bonus = 1; ueData.stamina_bonus = 1; ueData.power_bonus = 1; ueData.guts_bonus = 1; ueData.wits_bonus = 1; }
+    if (ueId === 'ue_32') ueData.training_effectiveness = 5;
+    if (ueId === 'ue_37') ueData.training_effectiveness = 5;
+    if (ueId === 'ue_39') ueData.initial_friendship_gauge = 5;
+    if (ueId === 'ue_59') { ueData.initial_speed = 10; ueData.initial_stamina = 10; ueData.initial_power = 10; ueData.initial_guts = 10; ueData.initial_wits = 10; }
+    if (ueId === 'ue_60') ueData.training_effectiveness = 5;
+    if (ueId === 'ue_62') ueData.training_effectiveness = 5;
+    if (ueId === 'ue_64') ueData.training_effectiveness = 5;
+    if (ueId === 'ue_65') ueData.training_effectiveness = 5;
+    if (ueId === 'ue_69') ueData.training_effectiveness = 15;
+    if (ueId === 'ue_71') ueData.failure_rate_drop = 20;
+    if (ueId === 'ue_73') ueData.friendship_bonus = 10;
+    if (ueId === 'ue_79') ueData.training_effectiveness = 5;
+    if (ueId === 'ue_82') ueData.friendship_bonus = 10;
+    if (ueId === 'ue_83') ueData.training_effectiveness = 10;
+    if (ueId === 'ue_85') ueData.training_effectiveness = 20;
+    if (ueId === 'ue_90') { ueData.friendship_bonus = 10; ueData.training_effectiveness = 5; }
+    
+    const baseStats = {
+        speed_bonus: base.speed_bonus || 0,
+        stamina_bonus: base.stamina_bonus || 0,
+        power_bonus: base.power_bonus || 0,
+        guts_bonus: base.guts_bonus || 0,
+        wits_bonus: base.wits_bonus || 0,
+        skill_point_bonus: base.skill_point_bonus || 0,
+        training_effectiveness: base.training_bonus || 0,
+        mood_effect: base.mood_effect || 0,
+        failure_rate_drop: base.failure_rate_drop || 0,
+        vital_cost_drop: base.vital_cost_drop || 0,
         race_bonus: base.race_bonus || 0,
         fan_bonus: base.fan_bonus || 0,
-        friendship_bonus: ueData.friendship_bonus ? (100 + (base.friendship_bonus || 0)) * (100 + ueData.friendship_bonus) / 100 - 100 : (base.friendship_bonus || 0),
-        initial_friendship_gauge: (base.initial_friendship_gauge || 0) + (ueData.initial_friendship_gauge || 0),
+        friendship_bonus: base.friendship_bonus || 0,
+        initial_friendship_gauge: base.initial_friendship_gauge || 0,
         hint_frequency: base.hint_frequency || 0,
-        initial_speed: (base.initial_speed || 0) + (ueData.initial_speed || 0),
-        initial_stamina: (base.initial_stamina || 0) + (ueData.initial_stamina || 0),
-        initial_power: (base.initial_power || 0) + (ueData.initial_power || 0),
-        initial_guts: (base.initial_guts || 0) + (ueData.initial_guts || 0),
-        initial_wits: (base.initial_wits || 0) + (ueData.initial_wits || 0)
+        initial_speed: base.initial_speed || 0,
+        initial_stamina: base.initial_stamina || 0,
+        initial_power: base.initial_power || 0,
+        initial_guts: base.initial_guts || 0,
+        initial_wits: base.initial_wits || 0,
+        specialty_priority: base.specialty_priority || 0
     };
+    
+    const ueStats = {
+        speed_bonus: ueData.speed_bonus || 0,
+        stamina_bonus: ueData.stamina_bonus || 0,
+        power_bonus: ueData.power_bonus || 0,
+        guts_bonus: ueData.guts_bonus || 0,
+        wits_bonus: ueData.wits_bonus || 0,
+        skill_point_bonus: ueData.skill_point_bonus || 0,
+        training_effectiveness: ueData.training_effectiveness || 0,
+        mood_effect: ueData.mood_effect || 0,
+        failure_rate_drop: ueData.failure_rate_drop || 0,
+        vital_cost_drop: ueData.vital_cost_drop || 0,
+        race_bonus: 0,
+        fan_bonus: 0,
+        friendship_bonus: ueData.friendship_bonus ? (100 + (base.friendship_bonus || 0)) * (100 + ueData.friendship_bonus) / 100 - 100 - (base.friendship_bonus || 0) : 0,
+        initial_friendship_gauge: ueData.initial_friendship_gauge || 0,
+        hint_frequency: ueData.hint_frequency || 0,
+        initial_speed: ueData.initial_speed || 0,
+        initial_stamina: ueData.initial_stamina || 0,
+        initial_power: ueData.initial_power || 0,
+        initial_guts: ueData.initial_guts || 0,
+        initial_wits: ueData.initial_wits || 0,
+        specialty_priority: ueData.specialty_priority || 0
+    };
+    
+    const combinedStats = {
+        speed_bonus: baseStats.speed_bonus + ueStats.speed_bonus,
+        stamina_bonus: baseStats.stamina_bonus + ueStats.stamina_bonus,
+        power_bonus: baseStats.power_bonus + ueStats.power_bonus,
+        guts_bonus: baseStats.guts_bonus + ueStats.guts_bonus,
+        wits_bonus: baseStats.wits_bonus + ueStats.wits_bonus,
+        skill_point_bonus: baseStats.skill_point_bonus + ueStats.skill_point_bonus,
+        training_effectiveness: baseStats.training_effectiveness + ueStats.training_effectiveness,
+        mood_effect: baseStats.mood_effect + ueStats.mood_effect,
+        failure_rate_drop: baseStats.failure_rate_drop + ueStats.failure_rate_drop,
+        vital_cost_drop: baseStats.vital_cost_drop + ueStats.vital_cost_drop,
+        race_bonus: baseStats.race_bonus,
+        fan_bonus: baseStats.fan_bonus,
+        friendship_bonus: baseStats.friendship_bonus + ueStats.friendship_bonus,
+        initial_friendship_gauge: baseStats.initial_friendship_gauge + ueStats.initial_friendship_gauge,
+        hint_frequency: baseStats.hint_frequency + ueStats.hint_frequency,
+        initial_speed: baseStats.initial_speed + ueStats.initial_speed,
+        initial_stamina: baseStats.initial_stamina + ueStats.initial_stamina,
+        initial_power: baseStats.initial_power + ueStats.initial_power,
+        initial_guts: baseStats.initial_guts + ueStats.initial_guts,
+        initial_wits: baseStats.initial_wits + ueStats.initial_wits,
+        specialty_priority: baseStats.specialty_priority + ueStats.specialty_priority
+    };
+    
+    return { baseStats, ueStats, combinedStats, bondThreshold, bondText };
+}
+
+function getCombinedCardStats(card, lb) {
+    const data = getCardStats(card, lb);
+    return data ? data.combinedStats : null;
+}
+
+let cardTooltipContainer = null;
+function showCardTooltip(e, card, lb) {
+    const data = getCardStats(card, lb);
+    if (!data) return;
+    const { baseStats, ueStats, combinedStats, bondThreshold, bondText } = data;
+    const hasBondThreshold = bondThreshold > 0;
+    const hasUeBonus = Object.values(ueStats).some(v => v !== 0);
+    
+    if (!cardTooltipContainer) {
+        cardTooltipContainer = document.createElement('div');
+        cardTooltipContainer.id = 'card-tooltip-wrapper';
+        cardTooltipContainer.style.cssText = 'position:fixed;z-index:9999;display:flex;gap:0;pointer-events:none';
+        document.body.appendChild(cardTooltipContainer);
+    }
+    
+    const fmt = (v) => v === 0 ? '-' : (Number.isInteger(v) ? v : v.toFixed(2));
+    const buildTooltipContent = (title, stats, titleColor) => {
+        let html = `<div style="font-weight:700;color:${titleColor};margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:6px">${title}</div>`;
+        const singleRow = (label, val, color) => val === 0 ? '' : `<div style="display:flex;justify-content:space-between;gap:12px;"><span style="color:${color}">${label}</span><span style="font-weight:600">${fmt(val)}</span></div>`;
+        
+        html += '<div style="display:flex;flex-direction:column;gap:4px">';
+        html += singleRow('Speed', stats.speed_bonus, '#45c2e5');
+        html += singleRow('Stamina', stats.stamina_bonus, '#22c55e');
+        html += singleRow('Power', stats.power_bonus, '#f59e0b');
+        html += singleRow('Guts', stats.guts_bonus, '#ec4899');
+        html += singleRow('Wits', stats.wits_bonus, '#8b5cf6');
+        html += singleRow('Skill Points', stats.skill_point_bonus, '#06b6d4');
+        html += '</div>';
+        
+        if (stats.training_effectiveness || stats.mood_effect || stats.failure_rate_drop || stats.vital_cost_drop || stats.friendship_bonus) {
+            html += `<div style="border-top:1px solid rgba(255,255,255,.1);margin-top:8px;padding-top:6px;display:flex;flex-direction:column;gap:4px">`;
+            html += singleRow('Training Eff', stats.training_effectiveness, '#10b981');
+            html += singleRow('Mood', stats.mood_effect, '#f472b6');
+            html += singleRow('Fail Drop', stats.failure_rate_drop, '#ef4444');
+            html += singleRow('Energy Red', stats.vital_cost_drop, '#fbbf24');
+            html += singleRow('Friendship', stats.friendship_bonus, '#a78bfa');
+            html += '</div>';
+        }
+        
+        if (stats.race_bonus || stats.fan_bonus || stats.initial_friendship_gauge || stats.hint_frequency || stats.specialty_priority) {
+            html += `<div style="border-top:1px solid rgba(255,255,255,.1);margin-top:8px;padding-top:6px;display:flex;flex-direction:column;gap:4px">`;
+            html += singleRow('Race Bonus', stats.race_bonus, '#f59e0b');
+            html += singleRow('Fan Bonus', stats.fan_bonus, '#ec4899');
+            html += singleRow('Init Friend', stats.initial_friendship_gauge, '#8b5cf6');
+            html += singleRow('Hint Freq', stats.hint_frequency, '#06b6d4');
+            html += singleRow('Spec Priority', stats.specialty_priority, '#f59e0b');
+            html += '</div>';
+        }
+        
+        if (stats.initial_speed || stats.initial_stamina || stats.initial_power || stats.initial_guts || stats.initial_wits) {
+            html += `<div style="border-top:1px solid rgba(255,255,255,.1);margin-top:8px;padding-top:6px;display:flex;flex-direction:column;gap:4px">`;
+            html += singleRow('Init Speed', stats.initial_speed, '#45c2e5');
+            html += singleRow('Init Stamina', stats.initial_stamina, '#22c55e');
+            html += singleRow('Init Power', stats.initial_power, '#f59e0b');
+            html += singleRow('Init Guts', stats.initial_guts, '#ec4899');
+            html += singleRow('Init Wits', stats.initial_wits, '#8b5cf6');
+            html += '</div>';
+        }
+        
+        return html;
+    };
+    
+    cardTooltipContainer.innerHTML = '';
+    
+    if (hasBondThreshold && hasUeBonus) {
+        const box1 = document.createElement('div');
+        box1.style.cssText = 'background:#1a1420;border:2px solid #45c2e5;border-radius:8px;padding:14px;font-size:13px;color:#fff;min-width:320px;box-shadow:0 4px 20px rgba(0,0,0,.5)';
+        box1.innerHTML = buildTooltipContent(`${card.title} LB${lb} [PRE]`, baseStats, '#45c2e5');
+        
+        const box2 = document.createElement('div');
+        box2.style.cssText = 'background:#1a1420;border:2px solid #4ade80;border-radius:8px;padding:14px;font-size:13px;color:#fff;min-width:320px;box-shadow:0 4px 20px rgba(0,0,0,.5)';
+        box2.innerHTML = buildTooltipContent(`${card.title} LB${lb} [POST ${bondText}]`, combinedStats, '#4ade80');
+        
+        cardTooltipContainer.appendChild(box1);
+        cardTooltipContainer.appendChild(box2);
+        cardTooltipContainer.style.display = 'flex';
+        
+        const rect = e.target.getBoundingClientRect();
+        const containerWidth = 320 * 2;
+        let left = rect.right + 10;
+        let top = rect.top;
+        if (left + containerWidth > window.innerWidth) left = Math.max(5, rect.left - containerWidth - 10);
+        if (top + 400 > window.innerHeight) top = window.innerHeight - 400 - 10;
+        if (top < 0) top = 5;
+        
+        cardTooltipContainer.style.left = left + 'px';
+        cardTooltipContainer.style.top = top + 'px';
+    } else {
+        const box = document.createElement('div');
+        box.style.cssText = 'background:#1a1420;border:2px solid #45c2e5;border-radius:8px;padding:14px;font-size:13px;color:#fff;min-width:340px;box-shadow:0 4px 20px rgba(0,0,0,.5)';
+        box.innerHTML = buildTooltipContent(`${card.title} LB${lb}`, combinedStats, '#45c2e5');
+        cardTooltipContainer.appendChild(box);
+        cardTooltipContainer.style.display = 'block';
+        
+        const rect = e.target.getBoundingClientRect();
+        let left = rect.right + 10;
+        let top = rect.top;
+        if (left + 340 > window.innerWidth) left = rect.left - 350;
+        if (top + 400 > window.innerHeight) top = window.innerHeight - 400 - 10;
+        if (top < 0) top = 5;
+        if (left < 0) left = 5;
+        
+        cardTooltipContainer.style.left = left + 'px';
+        cardTooltipContainer.style.top = top + 'px';
+    }
+}
+
+function hideCardTooltip() {
+    if (cardTooltipContainer) cardTooltipContainer.style.display = 'none';
 }
 
 let cardTooltipEl = null;
-function showCardTooltip(e, card, lb) {
+function showCardTooltipEl(e, card, lb) {
     if (!cardTooltipEl) {
         cardTooltipEl = document.createElement('div');
         cardTooltipEl.id = 'card-tooltip';
@@ -170,7 +361,8 @@ function showCardTooltip(e, card, lb) {
     cardTooltipEl.style.left = left + 'px';
     cardTooltipEl.style.top = top + 'px';
 }
-function hideCardTooltip() {
+
+function hideCardTooltipEl() {
     if (cardTooltipEl) cardTooltipEl.style.display = 'none';
 }
 
@@ -916,18 +1108,18 @@ document.getElementById('btnRank').onclick=async function(){
                 }
             }
         });
-        }catch(e){document.getElementById('results').innerHTML=`<div style="color:#ef4444;padding:1rem">Error: ${e}</div>`;this.disabled=false;this.textContent='Rank Pool';}
-    }
+    }catch(e){document.getElementById('results').innerHTML=`<div style="color:#ef4444;padding:1rem">Error: ${e}</div>`;this.disabled=false;this.textContent='Rank Pool';}
+};
 
-    const scrollTopBtn=Object.assign(document.createElement('button'),{innerHTML:'&#x25B2;',title:'Scroll to top',style:'position:fixed;bottom:80px;right:16px;width:44px;height:44px;border-radius:50%;background:var(--accent,#45c2e5);color:#000;border:none;font-size:20px;cursor:pointer;z-index:9999;display:none;box-shadow:0 4px 12px rgba(0,0,0,.3);opacity:0.8',onclick:()=>window.scrollTo({top:0,behavior:'smooth'})});
-    const scrollBottomBtn=Object.assign(document.createElement('button'),{innerHTML:'&#x25BC;',title:'Scroll to bottom',style:'position:fixed;bottom:16px;right:16px;width:44px;height:44px;border-radius:50%;background:var(--accent,#45c2e5);color:#000;border:none;font-size:20px;cursor:pointer;z-index:9999;display:none;box-shadow:0 4px 12px rgba(0,0,0,.3);opacity:0.8',onclick:()=>window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})});
-    document.body.append(scrollTopBtn,scrollBottomBtn);
-    let scrollTimeout;
-    window.addEventListener('scroll',function(){
-        scrollTopBtn.style.display=window.scrollY>300?'block':'none';
-        scrollBottomBtn.style.display=window.innerHeight+window.scrollY<document.body.scrollHeight-100?'block':'none';
-        clearTimeout(scrollTimeout);
-        scrollTimeout=setTimeout(()=>{scrollTopBtn.style.display='none';scrollBottomBtn.style.display='none';},3000);
-    },{passive:true});
+const scrollTopBtn=Object.assign(document.createElement('button'),{innerHTML:'&#x25B2;',title:'Scroll to top',style:'position:fixed;bottom:80px;right:16px;width:44px;height:44px;border-radius:50%;background:var(--accent,#45c2e5);color:#000;border:none;font-size:20px;cursor:pointer;z-index:9999;display:none;box-shadow:0 4px 12px rgba(0,0,0,.3);opacity:0.8',onclick:()=>window.scrollTo({top:0,behavior:'smooth'})});
+const scrollBottomBtn=Object.assign(document.createElement('button'),{innerHTML:'&#x25BC;',title:'Scroll to bottom',style:'position:fixed;bottom:16px;right:16px;width:44px;height:44px;border-radius:50%;background:var(--accent,#45c2e5);color:#000;border:none;font-size:20px;cursor:pointer;z-index:9999;display:none;box-shadow:0 4px 12px rgba(0,0,0,.3);opacity:0.8',onclick:()=>window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})});
+document.body.append(scrollTopBtn,scrollBottomBtn);
+let scrollTimeout;
+window.addEventListener('scroll',function(){
+    scrollTopBtn.style.display=window.scrollY>300?'block':'none';
+    scrollBottomBtn.style.display=window.innerHeight+window.scrollY<document.body.scrollHeight-100?'block':'none';
+    clearTimeout(scrollTimeout);
+    scrollTimeout=setTimeout(()=>{scrollTopBtn.style.display='none';scrollBottomBtn.style.display='none';},3000);
+},{passive:true});
 
 init();
