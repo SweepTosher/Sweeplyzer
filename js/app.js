@@ -660,19 +660,37 @@ function renderRankSort(){
     renderCardGrid();
 }
 
+function getMandatoryRace(turn) {
+    if (turn === 13) return 'OP';
+    const extensionStart = simTurns + 1;
+    if (turn === extensionStart + 1 || turn === extensionStart + 3 || turn === extensionStart + 5) return 'G0';
+    return null;
+}
+
+function isRaceEditable(turn) {
+    if (turn === 13) return false;
+    const extensionStart = simTurns + 1;
+    if (turn >= extensionStart) return false;
+    return true;
+}
+
 function renderRaceGrid(){
+    const totalDays = simTurns + 6;
     let html='';
-    for(let t=1;t<=simTurns;t++){
+    for(let t=1;t<=totalDays;t++){
         let r=raceSchedule[t];
+        let mandatory=getMandatoryRace(t);
         let period=getPeriodClass(t);
         let cls='race-cell '+period;
-        if(r)cls+=' '+r.grade;
+        if(mandatory)cls+=' '+mandatory+' mandatory';
+        else if(r)cls+=' '+r.grade;
         else if(SUMMER.has(t))cls+=' summer';
-        html+=`<div class="${cls}" data-turn="${t}" data-confident="${r?r.confident:'true'}">${r?r.grade:t}</div>`;
+        html+=`<div class="${cls}" data-turn="${t}" data-confident="${r?r.confident:'true'}">${mandatory||(r?r.grade:t)}</div>`;
     }
     document.getElementById('raceGrid').innerHTML=html;
     document.querySelectorAll('#raceGrid > div').forEach(el=>el.onclick=()=>{
         let t=+el.dataset.turn;
+        if(!isRaceEditable(t))return;
         if(raceGrade==='clear')delete raceSchedule[t];
         else if(raceSchedule[t]){
             if(raceSchedule[t].grade===raceGrade){

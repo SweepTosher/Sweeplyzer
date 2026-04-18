@@ -418,9 +418,9 @@ class SimulationEngine {
         for (const r of this.raceSchedule) { this.raceTurns[r.turn] = r.grade || 'G23'; this.raceConfident[r.turn] = r.confident !== undefined ? r.confident : this.confident; }
         const extensionStart = this.maxTurns + 1;
         this.mandatoryRaces = {13: 'OP'};
-        this.mandatoryRaces[extensionStart] = 'G0';
-        this.mandatoryRaces[extensionStart + 2] = 'G0';
-        this.mandatoryRaces[extensionStart + 4] = 'G0';
+        this.mandatoryRaces[extensionStart + 1] = 'G0';
+        this.mandatoryRaces[extensionStart + 3] = 'G0';
+        this.mandatoryRaces[extensionStart + 5] = 'G0';
         this.deckCards = [];
         for (const item of deckData) {
             const cardId = item.card_id, lb = item.lb !== undefined ? item.lb : 4;
