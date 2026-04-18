@@ -18,7 +18,8 @@ function getCombinedCardStats(card, lb) {
     const ue = ueId ? (uniqueEffectsData.find(u => u.id === ueId) || {}) : {};
     
     let ueData = { training_effectiveness: 0, mood_effect: 0, failure_rate_drop: 0, vital_cost_drop: 0,
-        speed_bonus: 0, stamina_bonus: 0, power_bonus: 0, guts_bonus: 0, wits_bonus: 0, skill_point_bonus: 0 };
+        speed_bonus: 0, stamina_bonus: 0, power_bonus: 0, guts_bonus: 0, wits_bonus: 0, skill_point_bonus: 0,
+        initial_speed: 0, initial_stamina: 0, initial_power: 0, initial_guts: 0, initial_wits: 0 };
     if (ue && ue.text) {
         const t = ue.text.toLowerCase();
         const statNames = ['speed', 'stamina', 'power', 'guts', 'wit'];
@@ -50,6 +51,11 @@ function getCombinedCardStats(card, lb) {
             const m = t.match(/(\d+)%/);
             if (m) ueData.failure_rate_drop += parseInt(m[1]);
         }
+        if (t.includes('initial speed')) { const m = t.match(/initial speed[^)]*\)\s*\((\d+)\)/i); if (m) ueData.initial_speed += parseInt(m[1]); else { const m2 = t.match(/initial speed.*?\((\d+)\)/i); if (m2) ueData.initial_speed += parseInt(m2[1]); } }
+        if (t.includes('initial stamina')) { const m = t.match(/initial stamina[^)]*\)\s*\((\d+)\)/i); if (m) ueData.initial_stamina += parseInt(m[1]); else { const m2 = t.match(/initial stamina.*?\((\d+)\)/i); if (m2) ueData.initial_stamina += parseInt(m2[1]); } }
+        if (t.includes('initial power')) { const m = t.match(/initial power[^)]*\)\s*\((\d+)\)/i); if (m) ueData.initial_power += parseInt(m[1]); else { const m2 = t.match(/initial power.*?\((\d+)\)/i); if (m2) ueData.initial_power += parseInt(m2[1]); } }
+        if (t.includes('initial guts')) { const m = t.match(/initial guts[^)]*\)\s*\((\d+)\)/i); if (m) ueData.initial_guts += parseInt(m[1]); else { const m2 = t.match(/initial guts.*?\((\d+)\)/i); if (m2) ueData.initial_guts += parseInt(m2[1]); } }
+        if (t.includes('initial wit')) { const m = t.match(/initial wit[^)]*\)\s*\((\d+)\)/i); if (m) ueData.initial_wits += parseInt(m[1]); else { const m2 = t.match(/initial wit.*?\((\d+)\)/i); if (m2) ueData.initial_wits += parseInt(m2[1]); } }
     }
     
     if (ueId === 'ue_24') { ueData.speed_bonus += 1; ueData.stamina_bonus += 1; ueData.power_bonus += 1; ueData.guts_bonus += 1; ueData.wits_bonus += 1; }
@@ -85,9 +91,14 @@ function getCombinedCardStats(card, lb) {
         vital_cost_drop: (base.vital_cost_drop || 0) + (ueData.vital_cost_drop || 0),
         race_bonus: base.race_bonus || 0,
         fan_bonus: base.fan_bonus || 0,
-        friendship_bonus: ueData.friendship_bonus ? Math.round((100 + (base.friendship_bonus || 0)) * (100 + ueData.friendship_bonus) / 100 - 100) : (base.friendship_bonus || 0),
+        friendship_bonus: ueData.friendship_bonus ? (100 + (base.friendship_bonus || 0)) * (100 + ueData.friendship_bonus) / 100 - 100 : (base.friendship_bonus || 0),
         initial_friendship_gauge: (base.initial_friendship_gauge || 0) + (ueData.initial_friendship_gauge || 0),
-        hint_frequency: base.hint_frequency || 0
+        hint_frequency: base.hint_frequency || 0,
+        initial_speed: (base.initial_speed || 0) + (ueData.initial_speed || 0),
+        initial_stamina: (base.initial_stamina || 0) + (ueData.initial_stamina || 0),
+        initial_power: (base.initial_power || 0) + (ueData.initial_power || 0),
+        initial_guts: (base.initial_guts || 0) + (ueData.initial_guts || 0),
+        initial_wits: (base.initial_wits || 0) + (ueData.initial_wits || 0)
     };
 }
 
@@ -135,6 +146,16 @@ function showCardTooltip(e, card, lb) {
         html += statRow('Fan Bonus', stats.fan_bonus, '#ec4899');
         html += statRow('Initial Friend', stats.initial_friendship_gauge, '#8b5cf6');
         html += statRow('Hint Freq', stats.hint_frequency, '#06b6d4');
+        html += '</div>';
+    }
+    
+    if (stats.initial_speed || stats.initial_stamina || stats.initial_power || stats.initial_guts || stats.initial_wits) {
+        html += '<div style="margin-top:8px;border-top:1px solid rgba(255,255,255,.1);padding-top:6px">';
+        html += statRow('Init Spd', stats.initial_speed, '#45c2e5');
+        html += statRow('Init Sta', stats.initial_stamina, '#22c55e');
+        html += statRow('Init Pow', stats.initial_power, '#f59e0b');
+        html += statRow('Init Gut', stats.initial_guts, '#ec4899');
+        html += statRow('Init Wis', stats.initial_wits, '#8b5cf6');
         html += '</div>';
     }
     
