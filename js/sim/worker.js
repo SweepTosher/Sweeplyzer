@@ -26,6 +26,10 @@ const SUMMER_CONSERVE_DATES = [35, 36, 59, 60], SUMMER_CONSERVE_ENERGY = 60;
 const FAVOR_LEVEL_1 = 1, FAVOR_LEVEL_2 = 2, FAVOR_LEVEL_3 = 3, FAVOR_LEVEL_4 = 4;
 const SUMMER = new Set([37, 38, 39, 40, 61, 62, 63, 64]);
 function getFavorLevel(bond) { if (bond >= 100) return FAVOR_LEVEL_4; else if (bond >= 80) return FAVOR_LEVEL_3; else if (bond >= 60) return FAVOR_LEVEL_2; return FAVOR_LEVEL_1; }
+function getPlacementTable(baseTable, motivation) {
+    const penalty = Math.max(0, 5 - motivation);
+    return [baseTable[0] - penalty, baseTable[1] - penalty, baseTable[2] + penalty * 2];
+}
 const DEFAULT_BASE_SCORES = [0.0, 0.0, 0.0, 0.0, 0.07];
 const DEFAULT_SCORE_VALUE = [[0.11, 0.10, 0.0025, 0.09],[0.11, 0.10, 0.0225, 0.09],[0.11, 0.10, 0.03, 0.09],[0.03, 0.05, 0.0375, 0.09],[0, 0, 0.0675, 0]];
 const DEFAULT_STAT_VALUE_MULTIPLIER = [0.01, 0.01, 0.01, 0.01, 0.01, 0.005];
@@ -207,6 +211,14 @@ class UniqueEffectCalculator {
     get_failure_rate_drop_for_card(state, card) { if (!card.unique_effect_id) return 0; const ue = this.unique_effects[card.unique_effect_id]; if (!ue) return 0; return Math.min(1.0, ue.failure_rate_drop / 100.0); }
     get_vital_cost_drop_for_card(state, card) { if (!card.unique_effect_id) return 0; const ue = this.unique_effects[card.unique_effect_id]; if (!ue) return 0; return Math.min(1.0, ue.vital_cost_drop / 100.0); }
     get_specialty_priority_bonus_for_card(state, card) { if (!card.unique_effect_id) return 0; const ue = this.unique_effects[card.unique_effect_id]; if (!ue || ue.specialty_priority <= 0) return 0; if (ue.bond_threshold > 0) { const cardIdx = this.deck_cards.indexOf(card); if (cardIdx >= 0 && state.friendship[cardIdx] < ue.bond_threshold) return 0; } return ue.specialty_priority; }
+    get_friendship_bonus_for_card(state, card) {
+        if (!card.unique_effect_id) return 0;
+        const ue = this.unique_effects[card.unique_effect_id];
+        if (!ue || ue.friendship_bonus <= 0) return 0;
+        if (ue.bond_threshold > 0) { const cardIdx = this.deck_cards.indexOf(card); if (cardIdx < 0 || state.friendship[cardIdx] < ue.bond_threshold) return 0; }
+        if (ue.full_bond) { const cardIdx = this.deck_cards.indexOf(card); if (cardIdx < 0 || state.friendship[cardIdx] < 100) return 0; }
+        return ue.friendship_bonus;
+    }
     get_initial_friendship_gauge_bonus() { let total = 0; for (const ue of this.active_effects) total += ue.initial_friendship_gauge; return total; }
     get_race_bonus() { let total = 0; for (const ue of this.active_effects) total += ue.race_bonus; return total; }
     get_initial_stat_bonus() { const result = [0, 0, 0, 0, 0]; for (const ue of this.active_effects) { result[0] += ue.initial_speed; result[1] += ue.initial_stamina; result[2] += ue.initial_power; result[3] += ue.initial_guts; result[4] += ue.initial_wits; } return result; }
@@ -255,7 +267,7 @@ function calculateTrainingValue(state, trainType, cardsAtTraining, deckCards, ef
     const motivationFactor = 0.1 * (state.motivation - 3) * (1 + 0.01 * totalMotivation);
     const motivationMult = 1.0 + motivationFactor;
     let friendshipMult = 1.0;
-    for (const cardIdx of shiningIndices) { const card = deckCards[cardIdx]; friendshipMult *= (1.0 + 0.01 * card.friendship_bonus); }
+    for (const cardIdx of shiningIndices) { const card = deckCards[cardIdx]; const baseFb = card.friendship_bonus; const ueFb = effectCalculator.get_friendship_bonus_for_card(state, card); friendshipMult *= (1.0 + 0.01 * baseFb) * (1.0 + 0.01 * ueFb); }
     const cardMultiplier = crowdMult * trainingMult * motivationMult * friendshipMult;
     const statGains = [];
     for (let i = 0; i < 6; i++) { statGains.push(Math.max(0, Math.floor(base[i] * cardMultiplier))); }
@@ -266,7 +278,7 @@ function calculateTrainingValue(state, trainType, cardsAtTraining, deckCards, ef
     return {statGains, vitalChange, failureRate};
 }
 class TrainingScorer {
-    constructor(deckCards, effectCalculator) { this.deck_cards = deckCards; this.effect_calculator = effectCalculator; }
+    constructor(deckCards, effectCalculator, statCaps) { this.deck_cards = deckCards; this.effect_calculator = effectCalculator; this.stat_caps = statCaps || [1200, 1200, 1200, 1200, 1200]; }
     _getWeights(date) { if (date <= DATE_JUNIOR_END) return DEFAULT_SCORE_VALUE[0]; else if (date <= DATE_CLASSIC_END) return DEFAULT_SCORE_VALUE[1]; else if (date <= DATE_SPRING_END) return DEFAULT_SCORE_VALUE[2]; else if (date <= DATE_SENIOR_END) return DEFAULT_SCORE_VALUE[3]; return DEFAULT_SCORE_VALUE[4]; }
     _getNpcScores(periodIdx, favor) { if (periodIdx >= DEFAULT_NPC_SCORE_VALUE.length) periodIdx = DEFAULT_NPC_SCORE_VALUE.length - 1; const npcArr = DEFAULT_NPC_SCORE_VALUE[periodIdx]; return favor === FAVOR_LEVEL_1 ? npcArr[0] : favor === FAVOR_LEVEL_2 ? npcArr[1] : npcArr[2]; }
     computeScores(state, distribution) {
@@ -313,6 +325,18 @@ class TrainingScorer {
             if (failureRate >= 0) { failMult = Math.max(0.0, 1.0 - failureRate / 50.0); score *= failMult; }
             if (idx === TRA_WISDOM) { if (energy > 90) { score *= date > 72 ? 0.35 : 0.75; } else if (energy < 85) { score *= 1.03; } }
             if (state.otonashi_appeared && state.otonashi_facility === idx) { score += state.get_otonashi_bonus() * 0.01; }
+            const statIdx = idx < 5 ? idx : 0;
+            if (statIdx < 5 && this.stat_caps && this.stat_caps[statIdx] > 0) {
+                const capVal = this.stat_caps[statIdx];
+                const currVal = state.fiveStatus[statIdx];
+                const ratio = currVal / capVal;
+                let capMult = 1.0;
+                if (ratio > 0.95) capMult = 0.0;
+                else if (ratio >= 0.90) capMult = 0.7;
+                else if (ratio >= 0.80) capMult = 0.8;
+                else if (ratio >= 0.70) capMult = 0.9;
+                score *= capMult;
+            }
             computedScores[idx] = score;
         }
         if (highestStatIdx !== null) {
@@ -389,9 +413,16 @@ class SimulationEngine {
         this.raceSchedule = options.raceSchedule || [];
         this.statBonus = options.statBonus || [0, 0, 0, 0, 0];
         this.startingStats = options.startingStats || [88, 88, 88, 88, 88];
+        this.statCaps = options.statCaps || [1200, 1200, 1200, 1200, 1200];
+        this.hardStatCaps = options.hardStatCaps || [1200, 1200, 1200, 1200, 1200];
         this.confident = options.confident !== undefined ? options.confident : true;
         this.raceTurns = {}; this.raceConfident = {};
         for (const r of this.raceSchedule) { this.raceTurns[r.turn] = r.grade || 'G23'; this.raceConfident[r.turn] = r.confident !== undefined ? r.confident : this.confident; }
+        const extensionStart = this.maxTurns + 1;
+        this.mandatoryRaces = {13: 'OP'};
+        this.mandatoryRaces[extensionStart] = 'G0';
+        this.mandatoryRaces[extensionStart + 2] = 'G0';
+        this.mandatoryRaces[extensionStart + 4] = 'G0';
         this.deckCards = [];
         for (const item of deckData) {
             const cardId = item.card_id, lb = item.lb !== undefined ? item.lb : 4;
@@ -417,12 +448,13 @@ class SimulationEngine {
         const state = new CareerState();
         state.vital = 100; state.maxVital = 100; state.motivation = 3; state.skillPt = 120; state.turn = 0;
         state.debut_race_win = false; state.stat_bonus_pct = [...this.statBonus];
+        state.fiveStatusLimit = [...this.hardStatCaps];
         for (let i = 0; i < 5; i++) state.fiveStatus[i] = this.startingStats[i];
         for (let i = 0; i < this.deckCards.length; i++) { if (i < this.initialFriendships.length) state.friendship[i] = Math.min(100, this.initialFriendships[i]); }
         for (const card of this.deckCards) { for (let j = 0; j < 5; j++) state.add_status(j, card.initial_bonus[j]); state.add_skill_pt(card.initial_bonus[5]); }
         const ueInitial = this.effectCalculator.get_initial_stat_bonus();
         for (let i = 0; i < 5; i++) state.add_status(i, ueInitial[i]);
-        const scorer = new TrainingScorer(this.deckCards, this.effectCalculator);
+        const scorer = new TrainingScorer(this.deckCards, this.effectCalculator, this.statCaps);
         const cardEventsFired = Array(this.deckCards.length).fill(null).map(() => []);
         const trainingCounts = [0, 0, 0, 0, 0], operationCountsTimeline = [];
         let restCounts = 0, medicCounts = 0, tripCounts = 0, raceCounts = 0, summerCounts = 0, totalFailures = 0, eventsTriggered = 0;
@@ -431,16 +463,60 @@ class SimulationEngine {
         const cardPressesByFacilityTimeline = [];
         const cumulativeCardAppearances = [Array(this.deckCards.length).fill(0), Array(this.deckCards.length).fill(0), Array(this.deckCards.length).fill(0), Array(this.deckCards.length).fill(0), Array(this.deckCards.length).fill(0)];
         const cumulativeCardAppearancesTimeline = [], facilityLevelsTimeline = [], trainingCountsTimeline = [], statHistory = [], spHistory = [];
-        while (state.turn < this.maxTurns) {
+        const actualMaxTurns = this.maxTurns + 6;
+        while (state.turn < actualMaxTurns) {
             statHistory.push([...state.fiveStatus]); spHistory.push(state.skillPt); facilityLevelsTimeline.push([...state.trainLevelCount]);
             if (state.has_status(SKIN_OUTBREAK) && Math.random() < SKIN_OUTBREAK_MOOD_CHANCE) state.add_motivation(-1);
             if (!state.otonashi_appeared && state.turn >= OTONASHI_APPEAR_DAY) { if (Math.random() < OTONASHI_APPEAR_CHANCE) { state.otonashi_appeared = true; state.otonashi_facility = Math.floor(Math.random() * 5); } }
             state.medic_room_available = this._rollMedicRoom(state);
             const distribution = distributeCards(state, this.deckCards, this.effectCalculator);
             for (let f = 0; f < 5; f++) { const cardsAt = distribution[f] || []; for (const ci of cardsAt) cumulativeCardAppearances[f][ci]++; }
-            if (state.turn in this.raceTurns) {
+            const mandatoryRaceGrade = this.mandatoryRaces[state.turn];
+            
+            if (mandatoryRaceGrade) {
+                const grade = mandatoryRaceGrade;
+                const isConfident = true;
+                const placementTable = getPlacementTable(PLACEMENT_CONFIDENT, state.motivation);
+                const placementRoll = Math.random() * 100, placement = placementRoll < placementTable[0] ? RACE_PLACEMENT_VICTORY : placementRoll < placementTable[0] + placementTable[1] ? RACE_PLACEMENT_SOLID : RACE_PLACEMENT_DEFEAT;
+                let isTop = false;
+                if (placement === RACE_PLACEMENT_VICTORY && state.vital > REST_THRESHOLD) { const topChance = TOP_TRIGGER_CONFIDENT; if (Math.random() * 100 < topChance) isTop = true; }
+                const rewardTable = RACE_REWARDS[placement], reward = isTop ? rewardTable.top : rewardTable.bot;
+                let energyCost = isTop ? reward.energy : (Math.random() < 0.5 ? reward.energy_a : reward.energy_b);
+                let statGain, spGain;
+                if (grade === 'OP') { statGain = reward.op[0] * 2; spGain = reward.op[1] * 2; }
+                else if (grade === 'G0') { statGain = reward.g1[0] * 2; spGain = reward.g1[1] * 2; }
+                else { statGain = reward.g1[0] * 2; spGain = reward.g1[1] * 2; }
+                let totalRaceBonus = this.deckCards.reduce((s, c) => s + c.race_bonus, 0); totalRaceBonus += this.effectCalculator.get_race_bonus();
+                const raceMult = 1.0 + 0.01 * totalRaceBonus; statGain = Math.floor(statGain * raceMult); spGain = Math.floor(spGain * raceMult);
+                for (let i = 0; i < 5; i++) state.add_status(i, statGain);
+                state.add_skill_pt(spGain); state.add_vital(energyCost);
+                if (Math.random() < 0.10) state.add_motivation(1);
+                raceCounts++;
+                if (placement === RACE_PLACEMENT_VICTORY && state.otonashi_appeared) {
+                    const elatedChance = ELATED_COVERAGE_CONFIDENT;
+                    if (Math.random() < elatedChance) {
+                        state.add_vital(-15); state.add_motivation(1);
+                        let elatStatGain, elatSpGain;
+                        if (grade === 'OP') { elatStatGain = reward.op[0] * 2; elatSpGain = reward.op[1] * 2; }
+                        else if (grade === 'G0') { elatStatGain = reward.g1[0] * 2; elatSpGain = reward.g1[1] * 2; }
+                        else { elatStatGain = reward.g1[0] * 2; elatSpGain = reward.g1[1] * 2; }
+                        for (let i = 0; i < 5; i++) state.add_status(i, elatStatGain);
+                        state.add_skill_pt(elatSpGain); state.otonashi_bond += 15;
+                    }
+                }
+                state.consecutive_races++;
+                const cIdx = Math.min(state.consecutive_races - 1, 3), tableIdx = state.vital >= 3 ? 0 : 1;
+                if (Math.random() < RACE_PUNISHMENT_MOOD[tableIdx][cIdx]) state.add_motivation(-1);
+                if (Math.random() < RACE_PUNISHMENT_SKIN[tableIdx][cIdx]) state.add_status_effect(SKIN_OUTBREAK);
+                if (Math.random() < RACE_PUNISHMENT_STATS[tableIdx][cIdx]) {
+                    const stats = [0, 1, 2, 3, 4];
+                    for (let i = stats.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [stats[i], stats[j]] = [stats[j], stats[i]]; }
+                    for (let i = 0; i < 3; i++) state.add_status(stats[i], -10);
+                }
+            } else if (state.turn in this.raceTurns) {
                 const preRaceEnergy = state.vital, grade = this.raceTurns[state.turn], isConfident = this.raceConfident[state.turn];
-                const placementTable = isConfident ? PLACEMENT_CONFIDENT : PLACEMENT_NORMAL;
+                const baseTable = isConfident ? PLACEMENT_CONFIDENT : PLACEMENT_NORMAL;
+                const placementTable = getPlacementTable(baseTable, state.motivation);
                 const placementRoll = Math.random() * 100, placement = placementRoll < placementTable[0] ? RACE_PLACEMENT_VICTORY : placementRoll < placementTable[0] + placementTable[1] ? RACE_PLACEMENT_SOLID : RACE_PLACEMENT_DEFEAT;
                 let isTop = false;
                 if (placement === RACE_PLACEMENT_VICTORY && state.vital > REST_THRESHOLD) { const topChance = isConfident ? TOP_TRIGGER_CONFIDENT : TOP_TRIGGER_NORMAL; if (Math.random() * 100 < topChance) isTop = true; }
@@ -478,7 +554,6 @@ class SimulationEngine {
                     for (let i = 0; i < 3; i++) state.add_status(stats[i], -10);
                 }
             } else {
-                state.consecutive_races = 0;
                 const {operation, trainType} = scorer.decideOperation(state, distribution);
                 if (operation === 'medic') { state.add_vital(MEDIC_ENERGY_RECOVERY); state.medic_uses_remaining -= 1; state.last_medic_turn = state.turn; medicCounts++; if (state.has_negative_condition() && Math.random() < MEDIC_CURE_CHANCE) state.remove_random_negative(); }
                 else if (operation === 'trip') { state.add_vital(30); state.add_motivation(1); tripCounts++; }

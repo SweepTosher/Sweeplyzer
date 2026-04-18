@@ -11,6 +11,147 @@ let rankCompletedResults=[];
 let rankTotalCandidates=0;
 
 function getVal(card,l,k){return ((card.effects||[])[l]||{})[k]||0;}
+function getCombinedCardStats(card, lb) {
+    if (!card) return null;
+    const base = card.effects ? (card.effects[lb] || card.effects[card.effects.length - 1] || {}) : {};
+    const ueId = card.unique_effect_id;
+    const ue = ueId ? (uniqueEffectsData.find(u => u.id === ueId) || {}) : {};
+    
+    let ueData = { training_effectiveness: 0, mood_effect: 0, failure_rate_drop: 0, vital_cost_drop: 0,
+        speed_bonus: 0, stamina_bonus: 0, power_bonus: 0, guts_bonus: 0, wits_bonus: 0, skill_point_bonus: 0 };
+    if (ue && ue.text) {
+        const t = ue.text.toLowerCase();
+        const statNames = ['speed', 'stamina', 'power', 'guts', 'wit'];
+        for (const stat of statNames) {
+            const regex = new RegExp(`${stat}.*?\\((\\d+)%?\\)`, 'i');
+            const match = t.match(regex);
+            if (match) {
+                const val = parseInt(match[1]);
+                ueData[`${stat}_bonus`] += val;
+            }
+        }
+        if (t.includes('friendship training')) {
+            const m = t.match(/(\d+)%/);
+            if (m) ueData.friendship_bonus = (ueData.friendship_bonus || 0) + parseInt(m[1]);
+        }
+        else if (t.includes('training effectiveness')) {
+            const m = t.match(/(\d+)%/);
+            if (m) ueData.training_effectiveness += parseInt(m[1]);
+        }
+        if (t.includes('mood effect')) {
+            const m = t.match(/(\d+)%/);
+            if (m) ueData.mood_effect += parseInt(m[1]);
+        }
+        if (t.includes('energy cost')) {
+            const m = t.match(/(\d+)%/);
+            if (m) ueData.vital_cost_drop += parseInt(m[1]);
+        }
+        if (t.includes('failure')) {
+            const m = t.match(/(\d+)%/);
+            if (m) ueData.failure_rate_drop += parseInt(m[1]);
+        }
+    }
+    
+    if (ueId === 'ue_24') { ueData.speed_bonus += 1; ueData.stamina_bonus += 1; ueData.power_bonus += 1; ueData.guts_bonus += 1; ueData.wits_bonus += 1; }
+    if (ueId === 'ue_32') ueData.training_effectiveness += 5;
+    if (ueId === 'ue_37') ueData.training_effectiveness += 5;
+    if (ueId === 'ue_39') ueData.initial_friendship_gauge = (ueData.initial_friendship_gauge || 0) + 5;
+    if (ueId === 'ue_43') ueData.specialty_priority = (ueData.specialty_priority || 0) + 30;
+    if (ueId === 'ue_50') ueData.specialty_priority = (ueData.specialty_priority || 0) + 50;
+    if (ueId === 'ue_59') { ueData.initial_speed = (ueData.initial_speed || 0) + 10; ueData.initial_stamina += 10; ueData.initial_power += 10; ueData.initial_guts += 10; ueData.initial_wits += 10; }
+    if (ueId === 'ue_60') ueData.training_effectiveness += 5;
+    if (ueId === 'ue_62') ueData.training_effectiveness += 5;
+    if (ueId === 'ue_64') ueData.training_effectiveness += 5;
+    if (ueId === 'ue_65') ueData.training_effectiveness += 5;
+    if (ueId === 'ue_69') ueData.training_effectiveness += 15;
+    if (ueId === 'ue_71') ueData.failure_rate_drop += 20;
+    if (ueId === 'ue_73') ueData.friendship_bonus = (ueData.friendship_bonus || 0) + 10;
+    if (ueId === 'ue_79') ueData.training_effectiveness += 5;
+    if (ueId === 'ue_82') ueData.friendship_bonus = (ueData.friendship_bonus || 0) + 10;
+    if (ueId === 'ue_83') ueData.training_effectiveness += 10;
+    if (ueId === 'ue_85') ueData.training_effectiveness += 20;
+    if (ueId === 'ue_90') { ueData.friendship_bonus = (ueData.friendship_bonus || 0) + 10; ueData.training_effectiveness += 5; }
+    
+    return {
+        speed_bonus: (base.speed_bonus || 0) + (ueData.speed_bonus || 0),
+        stamina_bonus: (base.stamina_bonus || 0) + (ueData.stamina_bonus || 0),
+        power_bonus: (base.power_bonus || 0) + (ueData.power_bonus || 0),
+        guts_bonus: (base.guts_bonus || 0) + (ueData.guts_bonus || 0),
+        wits_bonus: (base.wits_bonus || 0) + (ueData.wits_bonus || 0),
+        skill_point_bonus: (base.skill_point_bonus || 0) + (ueData.skill_point_bonus || 0),
+        training_effectiveness: (base.training_effectiveness || 0) + (ueData.training_effectiveness || 0),
+        mood_effect: (base.mood_effect || 0) + (ueData.mood_effect || 0),
+        failure_rate_drop: (base.failure_rate_drop || 0) + (ueData.failure_rate_drop || 0),
+        vital_cost_drop: (base.vital_cost_drop || 0) + (ueData.vital_cost_drop || 0),
+        race_bonus: base.race_bonus || 0,
+        fan_bonus: base.fan_bonus || 0,
+        friendship_bonus: ueData.friendship_bonus ? Math.round((100 + (base.friendship_bonus || 0)) * (100 + ueData.friendship_bonus) / 100 - 100) : (base.friendship_bonus || 0),
+        initial_friendship_gauge: (base.initial_friendship_gauge || 0) + (ueData.initial_friendship_gauge || 0),
+        hint_frequency: base.hint_frequency || 0
+    };
+}
+
+let cardTooltipEl = null;
+function showCardTooltip(e, card, lb) {
+    if (!cardTooltipEl) {
+        cardTooltipEl = document.createElement('div');
+        cardTooltipEl.id = 'card-tooltip';
+        cardTooltipEl.style.cssText = 'position:fixed;z-index:9999;background:#1a1420;border:2px solid #45c2e5;border-radius:8px;padding:14px;font-size:13px;color:#fff;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.5);max-width:340px';
+        document.body.appendChild(cardTooltipEl);
+    }
+    const stats = getCombinedCardStats(card, lb);
+    if (!stats) return;
+    
+    let html = `<div style="font-weight:700;color:#45c2e5;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:6px">${card.title} LB${lb}</div>`;
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px">';
+    
+    const statRow = (label, value, color) => {
+        if (value === 0) return '';
+        const formatted = Number.isInteger(value) ? value : value.toFixed(2);
+        return `<div style="display:flex;justify-content:space-between;gap:12px"><span style="color:${color}">${label}</span><span style="font-weight:600">${value > 0 ? '+' : ''}${formatted}</span></div>`;
+    };
+    
+    html += statRow('Speed', stats.speed_bonus, '#45c2e5');
+    html += statRow('Stamina', stats.stamina_bonus, '#22c55e');
+    html += statRow('Power', stats.power_bonus, '#f59e0b');
+    html += statRow('Guts', stats.guts_bonus, '#ec4899');
+    html += statRow('Wits', stats.wits_bonus, '#8b5cf6');
+    html += statRow('SP', stats.skill_point_bonus, '#06b6d4');
+    html += '</div>';
+    
+    if (stats.training_effectiveness || stats.mood_effect || stats.failure_rate_drop || stats.vital_cost_drop || stats.friendship_bonus) {
+        html += '<div style="margin-top:8px;border-top:1px solid rgba(255,255,255,.1);padding-top:6px">';
+        html += statRow('Training Eff', stats.training_effectiveness, '#10b981');
+        html += statRow('Mood', stats.mood_effect, '#f472b6');
+        html += statRow('Fail Rate Drop', stats.failure_rate_drop, '#ef4444');
+        html += statRow('Energy Cost Red', stats.vital_cost_drop, '#fbbf24');
+        html += statRow('Friendship Bonus', stats.friendship_bonus, '#a78bfa');
+        html += '</div>';
+    }
+    
+    if (stats.race_bonus || stats.fan_bonus || stats.initial_friendship_gauge || stats.hint_frequency) {
+        html += '<div style="margin-top:8px;border-top:1px solid rgba(255,255,255,.1);padding-top:6px">';
+        html += statRow('Race Bonus', stats.race_bonus, '#f59e0b');
+        html += statRow('Fan Bonus', stats.fan_bonus, '#ec4899');
+        html += statRow('Initial Friend', stats.initial_friendship_gauge, '#8b5cf6');
+        html += statRow('Hint Freq', stats.hint_frequency, '#06b6d4');
+        html += '</div>';
+    }
+    
+    cardTooltipEl.innerHTML = html;
+    cardTooltipEl.style.display = 'block';
+    
+    const rect = e.target.getBoundingClientRect();
+    let left = rect.right + 10;
+    let top = rect.top;
+    if (left + 340 > window.innerWidth) left = rect.left - 350;
+    if (top + cardTooltipEl.offsetHeight > window.innerHeight) top = window.innerHeight - cardTooltipEl.offsetHeight - 10;
+    cardTooltipEl.style.left = left + 'px';
+    cardTooltipEl.style.top = top + 'px';
+}
+function hideCardTooltip() {
+    if (cardTooltipEl) cardTooltipEl.style.display = 'none';
+}
 
 function getPeriodClass(turn){
     if(turn<=24)return 'junior';
@@ -52,6 +193,13 @@ function renderCards(){
     cardElementMap=new Map();
     document.querySelectorAll('.card').forEach(el=>{
         cardElementMap.set(el.dataset.id,el);
+        el.addEventListener('mouseenter', e => {
+            const baseId = el.dataset.baseId;
+            const lb = parseInt(el.dataset.lb);
+            const card = allCards.find(x => x.id === baseId);
+            if (card) showCardTooltip(e, card, lb);
+        });
+        el.addEventListener('mouseleave', hideCardTooltip);
     });
     window.addEventListener('dragover',e=>{
         const threshold=100;
@@ -163,7 +311,7 @@ function renderDeck(){
     document.getElementById('deckCount').textContent=deck.length;
     document.getElementById('btnSim').disabled=deck.length===0;
     if(!deck.length){document.getElementById('deckList').innerHTML='';document.getElementById('stats').innerHTML='';return;}
-    document.getElementById('deckList').innerHTML=deck.map((item,idx)=>`<div class="deck-card">
+    document.getElementById('deckList').innerHTML=deck.map((item,idx)=>`<div class="deck-card" data-base-id="${item.id}" data-lb="${item.lb}">
         <img src="${item.card.image_url}" onerror="this.src='${NO_IMG}'">
         <div class="deck-card-info">
             <div class="deck-card-name">${item.card.title} <span style="color:var(--accent)">LB${item.lb}</span></div>
@@ -174,6 +322,15 @@ function renderDeck(){
         </div>
         <button class="btn-remove" data-key="${item.id}_lb${item.lb}">x</button>
     </div>`).join('');
+    document.querySelectorAll('.deck-card').forEach(el => {
+        el.addEventListener('mouseenter', e => {
+            const baseId = el.dataset.baseId;
+            const lb = parseInt(el.dataset.lb);
+            const card = allCards.find(x => x.id === baseId);
+            if (card) showCardTooltip(e, card, lb);
+        });
+        el.addEventListener('mouseleave', hideCardTooltip);
+    });
     document.querySelectorAll('.btn-remove').forEach(b=>b.onclick=e=>{
         e.stopPropagation();
         let key=b.dataset.key;
@@ -223,7 +380,7 @@ function renderPool(){
         document.getElementById('poolCards').innerHTML='';
         return;
     }
-    document.getElementById('poolCards').innerHTML=rankPool.map(item=>`<div class="rank-card" draggable="true" data-key="${item.id}_lb${item.lb}">
+    document.getElementById('poolCards').innerHTML=rankPool.map(item=>`<div class="rank-card" draggable="true" data-key="${item.id}_lb${item.lb}" data-base-id="${item.id}" data-lb="${item.lb}">
         <img src="${item.card.image_url}" onerror="this.src='${NO_IMG}'">
         <div class="rank-card-title">${item.card.title}</div>
         <div class="rank-card-type">${item.card.type||''} LB${item.lb}</div>
@@ -233,6 +390,13 @@ function renderPool(){
         </div>
     </div>`).join('');
     document.querySelectorAll('.rank-card').forEach(el=>{
+        el.addEventListener('mouseenter', e => {
+            const baseId = el.dataset.baseId;
+            const lb = parseInt(el.dataset.lb);
+            const card = allCards.find(x => x.id === baseId);
+            if (card) showCardTooltip(e, card, lb);
+        });
+        el.addEventListener('mouseleave', hideCardTooltip);
         el.ondragstart=e=>{
             e.dataTransfer.setData('text/plain',el.dataset.key);
             el.style.opacity='.3';
@@ -604,6 +768,8 @@ document.getElementById('btnSim').onclick=async function(){
         let raceList=Object.entries(raceSchedule).map(([t,g])=>({turn:+t,grade:g.grade,confident:g.confident}));
         let statBonus=bonusIds.map(id=>+document.getElementById(id).value||0);
         let startStats=['startSpd','startSta','startPow','startGut','startWis'].map(id=>+document.getElementById(id).value||88);
+        let statCaps=['capSpd','capSta','capPow','capGut','capWis'].map(id=>+document.getElementById(id).value||1200);
+        let hardStatCaps=[1200,1200,1200,1200,1200];
         await runSimPool({
             deckData,
             cardsData:allCards,
@@ -614,6 +780,8 @@ document.getElementById('btnSim').onclick=async function(){
                 raceSchedule:raceList,
                 statBonus,
                 startingStats:startStats,
+                statCaps,
+                hardStatCaps,
                 confident:document.getElementById('confidentToggle').checked
             },
             workerPath:'js/sim/worker.js',
@@ -674,6 +842,8 @@ document.getElementById('btnRank').onclick=async function(){
         let raceList=Object.entries(raceSchedule).map(([t,g])=>({turn:+t,grade:g.grade,confident:g.confident}));
         let statBonus=bonusIds.map(id=>+document.getElementById(id).value||0);
         let startStats=['startSpd','startSta','startPow','startGut','startWis'].map(id=>+document.getElementById(id).value||88);
+        let statCaps=['capSpd','capSta','capPow','capGut','capWis'].map(id=>+document.getElementById(id).value||1200);
+        let hardStatCaps=[1200,1200,1200,1200,1200];
         let candidates=rankPool.map(i=>({card_id:i.id,lb:i.lb}));
         let deckIds=new Set(deckData.map(x=>x.card_id));
         candidates=candidates.filter(c=>!deckIds.has(c.card_id));
@@ -683,7 +853,7 @@ document.getElementById('btnRank').onclick=async function(){
             let testDeck=[...deckData,c];
             return{
                 deckData:testDeck,
-                options:{numSimulations:simCount,maxTurns:simTurns,raceSchedule:raceList,statBonus,startingStats:startStats,confident:document.getElementById('confidentToggle').checked},
+                options:{numSimulations:simCount,maxTurns:simTurns,raceSchedule:raceList,statBonus,startingStats:startStats,statCaps,hardStatCaps,confident:document.getElementById('confidentToggle').checked},
                 cardId:c.card_id,
                 cardLb:c.lb
             };
