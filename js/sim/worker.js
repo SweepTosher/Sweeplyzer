@@ -17,7 +17,7 @@ const RACE_REWARDS = { [RACE_PLACEMENT_VICTORY]: { top: { energy: -15, g1: [10, 
 const PLACEMENT_CONFIDENT = [80, 15, 5], PLACEMENT_NORMAL = [65, 25, 10];
 const TOP_TRIGGER_CONFIDENT = 15, TOP_TRIGGER_NORMAL = 5;
 const ELATED_COVERAGE_CONFIDENT = 0.15, ELATED_COVERAGE_NORMAL = 0.05;
-const REST_THRESHOLD = 43;
+const REST_THRESHOLD = 48;
 const SUMMER_CAMP_1_START = 36, SUMMER_CAMP_1_END = 40, SUMMER_CAMP_2_START = 60, SUMMER_CAMP_2_END = 64;
 const TOTAL_TURN = 78;
 const TRAINING_BASIC_VALUE = [ [[8,0,4,0,0,2,-19],[9,0,4,0,0,2,-20],[10,0,4,0,0,2,-21],[11,0,5,0,0,2,-23],[12,0,6,0,0,2,-25]], [[0,7,0,3,0,2,-17],[0,8,0,3,0,2,-18],[0,9,0,3,0,2,-19],[0,10,0,4,0,2,-21],[0,11,0,5,0,2,-23]], [[0,4,6,0,0,2,-18],[0,4,7,0,0,2,-19],[0,4,8,0,0,2,-20],[0,5,9,0,0,2,-22],[0,6,10,0,0,2,-24]], [[3,0,3,6,0,2,-20],[3,0,3,7,0,2,-21],[3,0,3,8,0,2,-22],[4,0,3,9,0,2,-24],[4,0,4,10,0,2,-26]], [[2,0,0,0,6,3,5],[2,0,0,0,7,3,5],[2,0,0,0,8,3,5],[3,0,0,0,9,3,5],[4,0,0,0,10,3,5]] ];
@@ -31,14 +31,14 @@ function getPlacementTable(baseTable, motivation) {
     return [baseTable[0] - penalty, baseTable[1] - penalty, baseTable[2] + penalty * 2];
 }
 const DEFAULT_BASE_SCORES = [0.0, 0.0, 0.0, 0.0, 0.07];
-const DEFAULT_SCORE_VALUE = [[0.11, 0.10, 0.0025, 0.09],[0.11, 0.10, 0.0225, 0.09],[0.11, 0.10, 0.03, 0.09],[0.03, 0.05, 0.0375, 0.09],[0, 0, 0.0675, 0]];
+const DEFAULT_SCORE_VALUE = [[0.11, 0.10, 0.0025, 0.09],[0.11, 0.10, 0.0225, 0.09],[0.11, 0.10, 0.03, 0.09],[0.03, 0.05, 0.03, 0.09],[0, 0, 0.0675, 0]];
 const DEFAULT_STAT_VALUE_MULTIPLIER = [0.01, 0.01, 0.01, 0.01, 0.01, 0.005];
 const DEFAULT_NPC_SCORE_VALUE = [[0.05, 0.05, 0.05],[0.05, 0.05, 0.05],[0.05, 0.05, 0.05],[0.03, 0.05, 0.05],[0, 0, 0.05]];
 const DEFAULT_PAL_FRIENDSHIP_SCORES = [0.08, 0.057, 0.018];
 const DEFAULT_PAL_CARD_MULTIPLIER = 0.1;
 const DEFAULT_SUMMER_SCORE_THRESHOLD = 0.34;
 const ENERGY_FAST_MEDIC = 80, ENERGY_FAST_TRIP = 80, ENERGY_MEDIC_GENERAL = 85, ENERGY_TRIP_GENERAL = 90, ENERGY_REST_EXTRA_DAY = 65;
-const MIN_SUPPORT_GOOD_TRAINING = 3, DEFAULT_REST_THRESHOLD = 43;
+const MIN_SUPPORT_GOOD_TRAINING = 3, DEFAULT_REST_THRESHOLD = 48;
 const URA_RACE_WINDOWS = [[73, 75],[76, 78],[79, 99]];
 const DEFAULT_MOTIVATION_THRESHOLD_YEAR1 = 3, DEFAULT_MOTIVATION_THRESHOLD_YEAR2 = 4, DEFAULT_MOTIVATION_THRESHOLD_YEAR3 = 4;
 const CARD_TYPE_SPEED = 0, CARD_TYPE_STAMINA = 1, CARD_TYPE_POWER = 2, CARD_TYPE_GUTS = 3, CARD_TYPE_WISDOM = 4, CARD_TYPE_FRIEND = 6, CARD_TYPE_GROUP = 6, CARD_TYPE_NPC = 10;
@@ -359,13 +359,13 @@ class TrainingScorer {
         else if (date <= 60) moodThreshold = DEFAULT_MOTIVATION_THRESHOLD_YEAR2;
         else moodThreshold = DEFAULT_MOTIVATION_THRESHOLD_YEAR3;
         const restThreshold = DEFAULT_REST_THRESHOLD;
-        if (medicAvailable && energy <= ENERGY_FAST_MEDIC) return {operation: 'medic', trainType: TRA_NONE};
+        if (medicAvailable && energy <= ENERGY_FAST_MEDIC && state.has_negative_condition()) return {operation: 'medic', trainType: TRA_NONE};
         if (energy < ENERGY_FAST_TRIP && state.motivation < moodThreshold) return {operation: 'trip', trainType: TRA_NONE};
         if (energy <= restThreshold) return {operation: 'rest', trainType: TRA_NONE};
         const {computedScores} = this.computeScores(state, distribution);
         let maxScore = Math.max(...computedScores);
         const supportCardMax = Math.max(...[0, 1, 2, 3, 4].map(i => (distribution[i] || []).length));
-        if (medicAvailable && energy <= ENERGY_MEDIC_GENERAL) return {operation: 'medic', trainType: TRA_NONE};
+        if (medicAvailable && energy <= ENERGY_MEDIC_GENERAL && state.has_negative_condition()) return {operation: 'medic', trainType: TRA_NONE};
         if (!medicAvailable && state.motivation < moodThreshold && energy < ENERGY_TRIP_GENERAL) {
             if ((date <= 36 && !(supportCardMax >= MIN_SUPPORT_GOOD_TRAINING)) || (40 < date && date <= 60) || (64 < date)) {
                 if (maxScore <= 0.3) return {operation: 'trip', trainType: TRA_NONE};
