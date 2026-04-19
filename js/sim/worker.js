@@ -224,15 +224,51 @@ class UniqueEffectCalculator {
 }
 function distributeCards(state, deckCards, effectCalculator) {
     const distribution = {0: [], 1: [], 2: [], 3: [], 4: []};
+    const MAX_SUPPORT_CARDS_PER_FACILITY = 4;
+
     for (let idx = 0; idx < deckCards.length; idx++) {
         const card = deckCards[idx];
-        if (card.is_friend_card() || card.is_group_card()) { const train = Math.floor(Math.random() * 5); distribution[train].push(idx); continue; }
+        if (card.is_friend_card() || card.is_group_card()) {
+            let train = Math.floor(Math.random() * 5);
+            if (distribution[train].length >= MAX_SUPPORT_CARDS_PER_FACILITY) {
+                for (let f = 0; f < 5; f++) {
+                    if (distribution[f].length < MAX_SUPPORT_CARDS_PER_FACILITY) { distribution[f].push(idx); break; }
+                }
+            } else {
+                distribution[train].push(idx);
+            }
+            continue;
+        }
+
         const specBonus = effectCalculator.get_specialty_priority_bonus_for_card(state, card);
         const weights = [];
         for (let t = 0; t < 5; t++) { weights.push(t === card.card_type ? 100 + card.specialty_priority + specBonus : 100); }
+
         const total = weights.reduce((a, b) => a + b, 0);
         let r = Math.random() * total, cumulative = 0, chosen = 0;
         for (let i = 0; i < weights.length; i++) { cumulative += weights[i]; if (r < cumulative) { chosen = i; break; } }
+
+        if (distribution[chosen].length >= MAX_SUPPORT_CARDS_PER_FACILITY) {
+            const available = [];
+            const wavailable = [];
+            for (let t = 0; t < 5; t++) {
+                if (distribution[t].length < MAX_SUPPORT_CARDS_PER_FACILITY) {
+                    available.push(t);
+                    wavailable.push(weights[t]);
+                }
+            }
+            if (available.length > 0) {
+                const tot = wavailable.reduce((a, b) => a + b, 0);
+                let r2 = Math.random() * tot, c2 = 0;
+                for (let i = 0; i < available.length; i++) {
+                    c2 += wavailable[i];
+                    if (r2 < c2) { chosen = available[i]; break; }
+                }
+            } else {
+                chosen = 0;
+            }
+        }
+
         distribution[chosen].push(idx);
     }
     return distribution;
@@ -258,14 +294,22 @@ function calculateTrainingValue(state, trainType, cardsAtTraining, deckCards, ef
     }
     totalFailRateDrop = Math.min(100, totalFailRateDrop); totalVitalCostDrop = Math.min(100, totalVitalCostDrop);
     const shiningIndices = [];
-    for (const cardIdx of cardsAtTraining) { const card = deckCards[cardIdx]; if (card.card_type === trainType && state.friendship[cardIdx] >= 80) shiningIndices.push(cardIdx); }
-    const headNum = cardsAtTraining.length + 1;
+    for (const cardIdx of cardsAtTraining) {
+        const card = deckCards[cardIdx];
+        if (card.card_type === trainType && state.friendship[cardIdx] >= 80) shiningIndices.push(cardIdx);
+    }
+    const headNum = Math.min(cardsAtTraining.length + 1, 5);
     const crowdMult = 1.0 + 0.05 * headNum;
     const trainingMult = 1.0 + 0.01 * totalTraining;
     const motivationFactor = 0.1 * (state.motivation - 3) * (1 + 0.01 * totalMotivation);
     const motivationMult = 1.0 + motivationFactor;
     let friendshipMult = 1.0;
-    for (const cardIdx of shiningIndices) { const card = deckCards[cardIdx]; const baseFb = card.friendship_bonus; const ueFb = effectCalculator.get_friendship_bonus_for_card(state, card); friendshipMult *= (1.0 + 0.01 * baseFb) * (1.0 + 0.01 * ueFb); }
+    for (const cardIdx of shiningIndices) {
+        const card = deckCards[cardIdx];
+        const baseFb = card.friendship_bonus;
+        const ueFb = effectCalculator.get_friendship_bonus_for_card(state, card);
+        friendshipMult *= (1.0 + 0.01 * baseFb) * (1.0 + 0.01 * ueFb);
+    }
     const cardMultiplier = crowdMult * trainingMult * motivationMult * friendshipMult;
     const statGains = [];
     for (let i = 0; i < 6; i++) { statGains.push(Math.max(0, Math.floor(base[i] * cardMultiplier))); }
