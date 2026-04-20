@@ -1,4 +1,4 @@
-let allCards=[], uniqueEffectsData=[], deck=[], rankPool=[], filterType='all', searchText='';
+let allCards=[], uniqueEffectsData=[], eventData={}, deck=[], rankPool=[], filterType='all', searchText='';
 let simTurns=72, simCount=3000;
 let raceSchedule={}, raceGrade='G1', raceConfident=true;
 let cardRankings=null;
@@ -955,6 +955,7 @@ async function init(){
             return r.json();
         });
         uniqueEffectsData=await fetch('data/unique_effects.json').then(r=>r.ok?r.json():[]).catch(()=>[]);
+        eventData=await fetch('data/event_data.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
         if(!allCards.length)throw new Error('No cards returned');
         renderFilters();
         renderCards();
@@ -1013,7 +1014,8 @@ document.getElementById('btnSim').onclick=async function(){
                 startingStats:startStats,
                 statCaps,
                 hardStatCaps,
-                confident:document.getElementById('confidentToggle').checked
+                confident:document.getElementById('confidentToggle').checked,
+                eventData
             },
             workerPath:'js/sim/worker.js',
             onProgress:function(completed,total,workerCount){
@@ -1084,7 +1086,7 @@ document.getElementById('btnRank').onclick=async function(){
             let testDeck=[...deckData,c];
             return{
                 deckData:testDeck,
-                options:{numSimulations:simCount,maxTurns:simTurns,raceSchedule:raceList,statBonus,startingStats:startStats,statCaps,hardStatCaps,confident:document.getElementById('confidentToggle').checked},
+                options:{numSimulations:simCount,maxTurns:simTurns,raceSchedule:raceList,statBonus,startingStats:startStats,statCaps,hardStatCaps,confident:document.getElementById('confidentToggle').checked,eventData},
                 cardId:c.card_id,
                 cardLb:c.lb
             };

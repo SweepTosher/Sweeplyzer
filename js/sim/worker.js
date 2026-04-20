@@ -282,17 +282,20 @@ function calculateTrainingValue(state, trainType, cardsAtTraining, deckCards, ef
         const ueStatBonus = effectCalculator.get_stat_bonus_for_card(state, card);
         for (let i = 0; i < 6; i++) { if (base[i] > 0 && i < ueStatBonus.length) base[i] += ueStatBonus[i]; }
     }
-    let totalTraining = 0, totalMotivation = 0, totalFailRateDrop = 0, totalVitalCostDrop = 0;
+    let totalTraining = 0, totalMotivation = 0;
+    let totalVitalDrop = 0;
+    let failRateMult = 1.0;
     for (const cardIdx of cardsAtTraining) {
         const card = deckCards[cardIdx];
         totalTraining += card.training_bonus; totalMotivation += card.mood_effect;
-        totalFailRateDrop += card.failure_rate_drop; totalVitalCostDrop += card.vital_cost_drop;
         totalTraining += effectCalculator.get_training_effectiveness_for_card(state, card);
         totalMotivation += effectCalculator.get_mood_effect_for_card(state, card);
-        totalFailRateDrop += effectCalculator.get_failure_rate_drop_for_card(state, card) * 100;
-        totalVitalCostDrop += effectCalculator.get_vital_cost_drop_for_card(state, card) * 100;
+        const cardVDrop = card.vital_cost_drop + effectCalculator.get_vital_cost_drop_for_card(state, card) * 100;
+        totalVitalDrop += cardVDrop;
+        const cardFDrop = card.failure_rate_drop + effectCalculator.get_failure_rate_drop_for_card(state, card) * 100;
+        failRateMult *= (1.0 - 0.01 * cardFDrop);
     }
-    totalFailRateDrop = Math.min(100, totalFailRateDrop); totalVitalCostDrop = Math.min(100, totalVitalCostDrop);
+    const vitalCostMult = 1.0 - (0.01 * totalVitalDrop);
     const shiningIndices = [];
     for (const cardIdx of cardsAtTraining) {
         const card = deckCards[cardIdx];
@@ -313,9 +316,7 @@ function calculateTrainingValue(state, trainType, cardsAtTraining, deckCards, ef
     const cardMultiplier = crowdMult * trainingMult * motivationMult * friendshipMult;
     const statGains = [];
     for (let i = 0; i < 6; i++) { statGains.push(Math.max(0, Math.floor(base[i] * cardMultiplier))); }
-    const vitalCostMult = 1.0 - 0.01 * totalVitalCostDrop;
-    const vitalChange = Math.floor(base[6] * vitalCostMult);
-    const failRateMult = 1.0 - 0.01 * totalFailRateDrop;
+    const vitalChange = base[6] < 0 ? Math.floor(base[6] * vitalCostMult) : base[6];
     const failureRate = state.calculate_failure_rate(trainType, failRateMult);
     return {statGains, vitalChange, failureRate};
 }
@@ -475,6 +476,26 @@ class SimulationEngine {
         this.effectCalculator = new UniqueEffectCalculator(this.deckCards, this.uniqueEffectsMap);
         this._calcInitialFriendships();
         this.cardEventThresholds = [30, 60, 80];
+        this.eventPool = [];
+        const rawEvents = options.eventData || {};
+        for (const [name, evt] of Object.entries(rawEvents)) {
+            if (name === 'Tutorial') continue;
+            const choices = [];
+            for (const [cId, stats] of Object.entries(evt.stats || {})) {
+                choices.push({
+                    speed: stats['Speed'] || 0,
+                    stamina: stats['Stamina'] || 0,
+                    power: stats['Power'] || 0,
+                    guts: stats['Guts'] || 0,
+                    wisdom: stats['Wisdom'] || 0,
+                    hp: stats['HP'] || 0,
+                    mood: stats['Mood'] || 0,
+                    skillPts: stats['Skill Pts'] || 0,
+                    friendship: stats['Friendship'] || 0
+                });
+            }
+            if (choices.length > 0) this.eventPool.push({ name, choices });
+        }
     }
     _calcInitialFriendships() {
         this.initialFriendships = [];
@@ -505,14 +526,26 @@ class SimulationEngine {
         const cardPressesByFacilityTimeline = [];
         const cumulativeCardAppearances = [Array(this.deckCards.length).fill(0), Array(this.deckCards.length).fill(0), Array(this.deckCards.length).fill(0), Array(this.deckCards.length).fill(0), Array(this.deckCards.length).fill(0)];
         const cumulativeCardAppearancesTimeline = [], facilityLevelsTimeline = [], trainingCountsTimeline = [], statHistory = [], spHistory = [];
+        const energyHistory = [], moodHistory = [], raceInfoTimeline = [], facilityGainsTimeline = [], potentialGainsTimeline = [], cardDistributionTimeline = [], friendshipHistory = [], statusEffectsTimeline = [], operationTimeline = [];
         const actualMaxTurns = this.maxTurns + 6;
         while (state.turn < actualMaxTurns) {
             statHistory.push([...state.fiveStatus]); spHistory.push(state.skillPt); facilityLevelsTimeline.push([...state.trainLevelCount]);
+            energyHistory.push(state.vital); moodHistory.push(state.motivation);
+            const turnFacilityGains = [null, null, null, null, null];
+            let turnOp = '';
             if (state.has_status(SKIN_OUTBREAK) && Math.random() < SKIN_OUTBREAK_MOOD_CHANCE) state.add_motivation(-1);
             if (!state.otonashi_appeared && state.turn >= OTONASHI_APPEAR_DAY) { if (Math.random() < OTONASHI_APPEAR_CHANCE) { state.otonashi_appeared = true; state.otonashi_facility = Math.floor(Math.random() * 5); } }
             state.medic_room_available = this._rollMedicRoom(state);
             const distribution = distributeCards(state, this.deckCards, this.effectCalculator);
             for (let f = 0; f < 5; f++) { const cardsAt = distribution[f] || []; for (const ci of cardsAt) cumulativeCardAppearances[f][ci]++; }
+            const potentialGains = [];
+            for (let f = 0; f < 5; f++) {
+                const cardsAt = distribution[f] || [];
+                const { statGains, vitalChange, failureRate } = calculateTrainingValue(state, f, cardsAt, this.deckCards, this.effectCalculator);
+                potentialGains.push({ statGains: [...statGains], vitalChange, failureRate });
+            }
+            potentialGainsTimeline.push(potentialGains);
+            cardDistributionTimeline.push(distribution);
             const mandatoryRaceGrade = this.mandatoryRaces[state.turn];
             
             if (mandatoryRaceGrade) {
@@ -532,7 +565,6 @@ class SimulationEngine {
                 const raceMult = 1.0 + 0.01 * totalRaceBonus; statGain = Math.floor(statGain * raceMult); spGain = Math.floor(spGain * raceMult);
                 for (let i = 0; i < 5; i++) state.add_status(i, statGain);
                 state.add_skill_pt(spGain); state.add_vital(energyCost);
-                if (Math.random() < 0.10) state.add_motivation(1);
                 raceCounts++;
                 if (placement === RACE_PLACEMENT_VICTORY && state.otonashi_appeared) {
                     const elatedChance = ELATED_COVERAGE_CONFIDENT;
@@ -555,6 +587,8 @@ class SimulationEngine {
                     for (let i = stats.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [stats[i], stats[j]] = [stats[j], stats[i]]; }
                     for (let i = 0; i < 3; i++) state.add_status(stats[i], -10);
                 }
+                raceInfoTimeline.push({ grade: mandatoryRaceGrade, placement: placement === RACE_PLACEMENT_VICTORY ? 'Victory' : placement === RACE_PLACEMENT_SOLID ? 'Solid' : 'Defeat', isTop, energyCost, statGain, spGain });
+                turnOp = 'race_' + mandatoryRaceGrade;
             } else if (state.turn in this.raceTurns) {
                 const preRaceEnergy = state.vital, grade = this.raceTurns[state.turn], isConfident = this.raceConfident[state.turn];
                 const baseTable = isConfident ? PLACEMENT_CONFIDENT : PLACEMENT_NORMAL;
@@ -572,7 +606,6 @@ class SimulationEngine {
                 const raceMult = 1.0 + 0.01 * totalRaceBonus; statGain = Math.floor(statGain * raceMult); spGain = Math.floor(spGain * raceMult);
                 for (let i = 0; i < 5; i++) state.add_status(i, statGain);
                 state.add_skill_pt(spGain); state.add_vital(energyCost);
-                if (Math.random() < 0.10) state.add_motivation(1);
                 raceCounts++;
                 if (placement === RACE_PLACEMENT_VICTORY && state.otonashi_appeared) {
                     const elatedChance = isConfident ? ELATED_COVERAGE_CONFIDENT : ELATED_COVERAGE_NORMAL;
@@ -595,8 +628,11 @@ class SimulationEngine {
                     for (let i = stats.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [stats[i], stats[j]] = [stats[j], stats[i]]; }
                     for (let i = 0; i < 3; i++) state.add_status(stats[i], -10);
                 }
+                raceInfoTimeline.push({ grade: grade, placement: placement === RACE_PLACEMENT_VICTORY ? 'Victory' : placement === RACE_PLACEMENT_SOLID ? 'Solid' : 'Defeat', isTop, energyCost, statGain, spGain });
+                turnOp = 'race_' + grade;
             } else {
                 const {operation, trainType} = scorer.decideOperation(state, distribution);
+                turnOp = operation;
                 if (operation === 'medic') { state.add_vital(MEDIC_ENERGY_RECOVERY); state.medic_uses_remaining -= 1; state.last_medic_turn = state.turn; medicCounts++; if (state.has_negative_condition() && Math.random() < MEDIC_CURE_CHANCE) state.remove_random_negative(); }
                 else if (operation === 'trip') { state.add_vital(30); state.add_motivation(1); tripCounts++; }
                 else if (operation === 'rest') { state.add_vital(50); restCounts++; }
@@ -609,43 +645,42 @@ class SimulationEngine {
                 else if (operation === 'train') {
                     const cardsAt = distribution[trainType] || []; trainingCounts[trainType]++;
                     for (const ci of cardsAt) cardPressesByFacility[trainType][ci]++;
-                    if (!scorer.applyTraining(state, trainType, cardsAt)) totalFailures++;
+                    const potential = calculateTrainingValue(state, trainType, cardsAt, this.deckCards, this.effectCalculator);
+                    const beforeStats = [...state.fiveStatus];
+                    const beforeSP = state.skillPt;
+                    const success = scorer.applyTraining(state, trainType, cardsAt);
+                    const actualStatGains = [];
+                    for (let i = 0; i < 5; i++) actualStatGains.push(state.fiveStatus[i] - beforeStats[i]);
+                    const actualSPGain = state.skillPt - beforeSP;
+                    const actualGainsArray = [...actualStatGains, actualSPGain];
+                    turnFacilityGains[trainType] = {
+                        statGains: actualGainsArray,
+                        vitalChange: potential.vitalChange,
+                        succeeded: success,
+                        failureRate: potential.failureRate
+                    };
                     facilityLevels[trainType] = state.get_facility_level(trainType); facilityPresses[trainType]++;
                 }
                 cardPressesByFacilityTimeline.push(cardPressesByFacility.map(f => [...f]));
             }
-            for (let i = 0; i < this.deckCards.length; i++) {
-                for (const threshold of this.cardEventThresholds) {
-                    if (!cardEventsFired[i].includes(threshold) && state.friendship[i] >= threshold) {
-                        cardEventsFired[i].push(threshold); eventsTriggered++;
-                        const card = this.deckCards[i];
-                        if (card.card_type < 5) state.add_status(card.card_type, 10 + Math.floor(Math.random() * 6));
-                        state.add_skill_pt(10 + Math.floor(Math.random() * 11));
-                        if (Math.random() < 0.5) state.add_vital(10);
-                        state.add_friendship(i, 5);
-                    }
-                }
+            facilityGainsTimeline.push(turnFacilityGains);
+            operationTimeline.push(turnOp);
+            friendshipHistory.push([...state.friendship]);
+            statusEffectsTimeline.push([...state.status_effects]);
+            if (state.turn < 72 && this.eventPool.length > 0 && Math.random() < 0.50) {
+                const evt = this.eventPool[Math.floor(Math.random() * this.eventPool.length)];
+                const choice = evt.choices[Math.floor(Math.random() * evt.choices.length)];
+                if (choice.speed) state.add_status(0, Math.round(choice.speed));
+                if (choice.stamina) state.add_status(1, Math.round(choice.stamina));
+                if (choice.power) state.add_status(2, Math.round(choice.power));
+                if (choice.guts) state.add_status(3, Math.round(choice.guts));
+                if (choice.wisdom) state.add_status(4, Math.round(choice.wisdom));
+                if (choice.hp) state.add_vital(Math.round(choice.hp));
+                if (choice.mood) state.add_motivation(Math.round(choice.mood));
+                if (choice.skillPts) state.add_skill_pt(Math.round(choice.skillPts));
+                eventsTriggered++;
             }
-            if (state.turn < 72) {
-                if (Math.random() < 0.35) {
-                    eventsTriggered++; const cardIdx = this.deckCards.length - 1;
-                    if (cardIdx >= 0) { const card = Math.floor(Math.random() * (cardIdx + 1)); const stat = Math.floor(Math.random() * 5); state.add_status(stat, 20); state.add_skill_pt(20); state.add_friendship(card, 5); if (Math.random() < 0.5) state.add_vital(10); if (Math.random() < 0.4 * (1.0 - state.turn / TOTAL_TURN)) state.add_motivation(1); }
-                }
-                if (Math.random() < 0.10) for (let i = 0; i < 5; i++) state.add_status(i, 3);
-                if (Math.random() < 0.10) state.add_vital(5);
-                if (Math.random() < 0.02) state.add_vital(30);
-                if (Math.random() < 0.02) state.add_motivation(1);
-                if (state.turn >= 12 && Math.random() < 0.04) state.add_motivation(-1);
-            }
-            if (state.turn === 11) { for (let i = 0; i < 5; i++) state.add_status(i, 3); state.add_skill_pt(45); state.debut_race_win = true; }
-            if (state.turn === 23) { if (state.maxVital - state.vital >= 20) state.add_vital(20); else for (let i = 0; i < 5; i++) state.add_status(i, 5); }
-            if (state.turn === 47) { if (state.maxVital - state.vital >= 30) state.add_vital(30); else for (let i = 0; i < 5; i++) state.add_status(i, 8); }
-            if (state.turn === 48) {
-                const rd = Math.random() * 100;
-                if (rd < 16) { state.add_vital(30); for (let i = 0; i < 5; i++) state.add_status(i, 10); state.add_motivation(2); }
-                else if (rd < 43) { state.add_vital(20); for (let i = 0; i < 5; i++) state.add_status(i, 5); state.add_motivation(1); }
-                else { state.add_vital(20); }
-            }
+
             trainingCountsTimeline.push([...trainingCounts]); operationCountsTimeline.push([restCounts, medicCounts, tripCounts, raceCounts, summerCounts]);
             cumulativeCardAppearancesTimeline.push(cumulativeCardAppearances.map(f => [...f]));
             state.turn++;
@@ -656,7 +691,7 @@ class SimulationEngine {
         for (let i = 0; i < 5; i++) state.add_status(i, 45); state.add_skill_pt(20);
         if (state.otonashi_bond >= 80) for (let i = 0; i < 5; i++) state.add_status(i, 3);
         if (state.otonashi_bond >= 100) for (let i = 0; i < 5; i++) state.add_status(i, 2);
-        return { finalStats: [...state.fiveStatus], skillPoints: state.skillPt, turnsCompleted: state.turn, trainingCounts, restCounts, medicCounts, tripCounts, raceCounts, summerCounts, totalFailures, eventsTriggered, statHistory, spHistory, facilityPresses, facilityLevels, facilityLevelsTimeline, trainingCountsTimeline, operationCountsTimeline, cardPressesByFacility, cardPressesByFacilityTimeline, cumulativeCardAppearancesTimeline };
+        return { finalStats: [...state.fiveStatus], skillPoints: state.skillPt, turnsCompleted: state.turn, trainingCounts, restCounts, medicCounts, tripCounts, raceCounts, summerCounts, totalFailures, eventsTriggered, statHistory, spHistory, energyHistory, moodHistory, facilityPresses, facilityLevels, facilityLevelsTimeline, trainingCountsTimeline, operationCountsTimeline, cardPressesByFacility, cardPressesByFacilityTimeline, cumulativeCardAppearancesTimeline, raceInfoTimeline, facilityGainsTimeline, potentialGainsTimeline, cardDistributionTimeline, friendshipHistory, statusEffectsTimeline, operationTimeline };
     }
     runSimulationsChunk(offset, count) {
         const results = [];
@@ -665,26 +700,32 @@ class SimulationEngine {
     }
 }
 
-let workerEngine = null;
-let workerCardId = null;
-let workerCardLb = null;
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { SimulationEngine };
+}
 
-self.onmessage = function(e) {
-    const { type, data } = e.data;
-    if (type === 'init') {
-        workerEngine = new SimulationEngine(data.deckData, data.cardsData, data.uniqueEffectsData, data.options);
-        workerCardId = data.cardId || null;
-        workerCardLb = data.cardLb || null;
-        self.postMessage({ type: 'ready' });
-    } else if (type === 'run') {
-        if (data.deckData) {
+if (typeof self !== 'undefined') {
+    let workerEngine = null;
+    let workerCardId = null;
+    let workerCardLb = null;
+
+    self.onmessage = function(e) {
+        const { type, data } = e.data;
+        if (type === 'init') {
             workerEngine = new SimulationEngine(data.deckData, data.cardsData, data.uniqueEffectsData, data.options);
             workerCardId = data.cardId || null;
             workerCardLb = data.cardLb || null;
+            self.postMessage({ type: 'ready' });
+        } else if (type === 'run') {
+            if (data.deckData) {
+                workerEngine = new SimulationEngine(data.deckData, data.cardsData, data.uniqueEffectsData, data.options);
+                workerCardId = data.cardId || null;
+                workerCardLb = data.cardLb || null;
+            }
+            const result = workerEngine.runSimulationsChunk(data.offset || 0, data.count || 0);
+            result.card_id = workerCardId;
+            result.card_lb = workerCardLb;
+            self.postMessage({ type: 'result', data: result });
         }
-        const result = workerEngine.runSimulationsChunk(data.offset || 0, data.count || 0);
-        result.card_id = workerCardId;
-        result.card_lb = workerCardLb;
-        self.postMessage({ type: 'result', data: result });
-    }
-};
+    };
+}

@@ -214,7 +214,8 @@ window.runSimPool = function (config) {
                         raceSchedule: options.raceSchedule,
                         statBonus: options.statBonus,
                         startingStats: options.startingStats,
-                        confident: options.confident
+                        confident: options.confident,
+                        eventData: options.eventData
                     }
                 }
             });
