@@ -1,16 +1,16 @@
 const CARD_TYPE_MAP = { 'speed': 0, 'stamina': 1, 'power': 2, 'guts': 3, 'wisdom': 4, 'friend': 6, 'group': 6 };
 const TRA_SPEED = 0, TRA_STAMINA = 1, TRA_POWER = 2, TRA_GUTS = 3, TRA_WISDOM = 4, TRA_REST = 5, TRA_NONE = -1;
 const PRACTICE_PERFECT = 1, PRACTICE_POOR = 2, SKIN_OUTBREAK = 3;
-const DATE_JUNIOR_END = 24, DATE_CLASSIC_END = 48, DATE_SENIOR_END = 72, DATE_SPRING_END = 60;
+const DATE_JUNIOR_END = 23, DATE_CLASSIC_END = 47, DATE_SENIOR_END = 71, DATE_SPRING_END = 59;
 const STATUS_EFFECTS = { [PRACTICE_PERFECT]: { failure_mod: -2, stat_mod: 0, mood_mod: 0 }, [PRACTICE_POOR]: { failure_mod: 2, stat_mod: -10, mood_mod: -1 }, [SKIN_OUTBREAK]: { failure_mod: 0, stat_mod: 0, mood_mod: 0 } };
 const SKIN_OUTBREAK_MOOD_CHANCE = 0.50;
 const MEDIC_CURE_CHANCE = 0.90;
 const MEDIC_ENERGY_RECOVERY = 20;
 const NEGATIVE_CONDITIONS = [PRACTICE_POOR, SKIN_OUTBREAK];
-const RACE_PUNISHMENT_MOOD = [[0, 0, 0.60, 1.0],[0.15, 0.33, 0.90, 1.0]];
-const RACE_PUNISHMENT_SKIN = [[0, 0, 0.15, 0.33],[0.04, 0.08, 0.25, 0.33]];
-const RACE_PUNISHMENT_STATS = [[0, 0, 0, 0.40],[0, 0, 0, 0.40]];
-const PRACTICE_FAIL_EVENT = { name: "Normal Get Well Soon!", top_path: { roll_threshold: 92, outcomes: [{ state: null, stat_penalty: -5, mood_penalty: -1, weight: 92 }, { state: PRACTICE_POOR, stat_penalty: -5, mood_penalty: -1, weight: 8 }]}, bottom_path: { roll_threshold: 85, outcomes: [{ state: null, stat_penalty: -10, mood_penalty: -1, weight: 30 }, { state: PRACTICE_POOR, stat_penalty: -10, mood_penalty: -1, weight: 55 }, { state: PRACTICE_PERFECT, stat_penalty: 0, mood_penalty: 0, weight: 15 }]}, get_path: function(state) { if (state.has_status(PRACTICE_POOR) || state.turn <= DATE_JUNIOR_END) return this.bottom_path; return this.top_path; } };
+const RACE_PUNISHMENT_MOOD = [[0, 0, 0.60, 1.0], [0.15, 0.33, 0.90, 1.0]];
+const RACE_PUNISHMENT_SKIN = [[0, 0, 0.15, 0.33], [0.04, 0.08, 0.25, 0.33]];
+const RACE_PUNISHMENT_STATS = [[0, 0, 0, 0.40], [0, 0, 0, 0.40]];
+const PRACTICE_FAIL_EVENT = { name: "Normal Get Well Soon!", top_path: { roll_threshold: 92, outcomes: [{ state: null, stat_penalty: -5, mood_penalty: -1, weight: 92 }, { state: PRACTICE_POOR, stat_penalty: -5, mood_penalty: -1, weight: 8 }] }, bottom_path: { roll_threshold: 85, outcomes: [{ state: null, stat_penalty: -10, mood_penalty: -1, weight: 30 }, { state: PRACTICE_POOR, stat_penalty: -10, mood_penalty: -1, weight: 55 }, { state: PRACTICE_PERFECT, stat_penalty: 0, mood_penalty: 0, weight: 15 }] }, get_path: function (state) { if (state.has_status(PRACTICE_POOR) || state.turn <= DATE_JUNIOR_END) return this.bottom_path; return this.top_path; } };
 const OTONASHI_APPEAR_DAY = 12, OTONASHI_APPEAR_CHANCE = 0.5;
 const RACE_PLACEMENT_VICTORY = 0, RACE_PLACEMENT_SOLID = 1, RACE_PLACEMENT_DEFEAT = 2;
 const RACE_REWARDS = { [RACE_PLACEMENT_VICTORY]: { top: { energy: -15, g1: [10, 45], g23: [8, 35], op: [5, 30] }, bot: { energy_a: -5, energy_b: -20, g1: [10, 45], g23: [8, 35], op: [5, 30] } }, [RACE_PLACEMENT_SOLID]: { top: { energy: -20, g1: [8, 45], g23: [5, 35], op: [3, 30] }, bot: { energy_a: -10, energy_b: -30, g1: [8, 45], g23: [5, 35], op: [3, 30] } }, [RACE_PLACEMENT_DEFEAT]: { top: { energy: -25, g1: [4, 25], g23: [3, 20], op: [0, 10] }, bot: { energy_a: -15, energy_b: -35, g1: [4, 25], g23: [3, 20], op: [0, 10] } } };
@@ -20,26 +20,26 @@ const ELATED_COVERAGE_CONFIDENT = 0.15, ELATED_COVERAGE_NORMAL = 0.05;
 const REST_THRESHOLD = 48;
 const SUMMER_CAMP_1_START = 36, SUMMER_CAMP_1_END = 40, SUMMER_CAMP_2_START = 60, SUMMER_CAMP_2_END = 64;
 const TOTAL_TURN = 78;
-const TRAINING_BASIC_VALUE = [ [[8,0,4,0,0,2,-19],[9,0,4,0,0,2,-20],[10,0,4,0,0,2,-21],[11,0,5,0,0,2,-23],[12,0,6,0,0,2,-25]], [[0,7,0,3,0,2,-17],[0,8,0,3,0,2,-18],[0,9,0,3,0,2,-19],[0,10,0,4,0,2,-21],[0,11,0,5,0,2,-23]], [[0,4,6,0,0,2,-18],[0,4,7,0,0,2,-19],[0,4,8,0,0,2,-20],[0,5,9,0,0,2,-22],[0,6,10,0,0,2,-24]], [[3,0,3,6,0,2,-20],[3,0,3,7,0,2,-21],[3,0,3,8,0,2,-22],[4,0,3,9,0,2,-24],[4,0,4,10,0,2,-26]], [[2,0,0,0,6,3,5],[2,0,0,0,7,3,5],[2,0,0,0,8,3,5],[3,0,0,0,9,3,5],[4,0,0,0,10,3,5]] ];
-const FAIL_RATE_BASIC = [[520, 524, 528, 532, 536],[507, 511, 515, 519, 523],[516, 520, 524, 528, 532],[532, 536, 540, 544, 548],[320, 321, 322, 323, 324]];
-const SUMMER_CONSERVE_DATES = [35, 36, 59, 60], SUMMER_CONSERVE_ENERGY = 60;
+const TRAINING_BASIC_VALUE = [[[8, 0, 4, 0, 0, 2, -19], [9, 0, 4, 0, 0, 2, -20], [10, 0, 4, 0, 0, 2, -21], [11, 0, 5, 0, 0, 2, -23], [12, 0, 6, 0, 0, 2, -25]], [[0, 7, 0, 3, 0, 2, -17], [0, 8, 0, 3, 0, 2, -18], [0, 9, 0, 3, 0, 2, -19], [0, 10, 0, 4, 0, 2, -21], [0, 11, 0, 5, 0, 2, -23]], [[0, 4, 6, 0, 0, 2, -18], [0, 4, 7, 0, 0, 2, -19], [0, 4, 8, 0, 0, 2, -20], [0, 5, 9, 0, 0, 2, -22], [0, 6, 10, 0, 0, 2, -24]], [[3, 0, 3, 6, 0, 2, -20], [3, 0, 3, 7, 0, 2, -21], [3, 0, 3, 8, 0, 2, -22], [4, 0, 3, 9, 0, 2, -24], [4, 0, 4, 10, 0, 2, -26]], [[2, 0, 0, 0, 6, 3, 5], [2, 0, 0, 0, 7, 3, 5], [2, 0, 0, 0, 8, 3, 5], [3, 0, 0, 0, 9, 3, 5], [4, 0, 0, 0, 10, 3, 5]]];
+const FAIL_RATE_BASIC = [[520, 524, 528, 532, 536], [507, 511, 515, 519, 523], [516, 520, 524, 528, 532], [532, 536, 540, 544, 548], [320, 321, 322, 323, 324]];
+const SUMMER_CONSERVE_DATES = [34, 35, 58, 59], SUMMER_CONSERVE_ENERGY = 60;
 const FAVOR_LEVEL_1 = 1, FAVOR_LEVEL_2 = 2, FAVOR_LEVEL_3 = 3, FAVOR_LEVEL_4 = 4;
-const SUMMER = new Set([37, 38, 39, 40, 61, 62, 63, 64]);
+const SUMMER = new Set([36, 37, 38, 39, 60, 61, 62, 63]);
 function getFavorLevel(bond) { if (bond >= 100) return FAVOR_LEVEL_4; else if (bond >= 80) return FAVOR_LEVEL_3; else if (bond >= 60) return FAVOR_LEVEL_2; return FAVOR_LEVEL_1; }
 function getPlacementTable(baseTable, motivation) {
     const penalty = Math.max(0, 5 - motivation);
     return [baseTable[0] - penalty, baseTable[1] - penalty, baseTable[2] + penalty * 2];
 }
 const DEFAULT_BASE_SCORES = [0.0, 0.0, 0.0, 0.0, 0.07];
-const DEFAULT_SCORE_VALUE = [[0.11, 0.10, 0.0025, 0.09],[0.11, 0.10, 0.0225, 0.09],[0.11, 0.10, 0.03, 0.09],[0.03, 0.05, 0.03, 0.09],[0, 0, 0.0675, 0]];
+const DEFAULT_SCORE_VALUE = [[0.11, 0.10, 0.0025, 0.09], [0.11, 0.10, 0.0225, 0.09], [0.11, 0.10, 0.03, 0.09], [0.03, 0.05, 0.03, 0.09], [0, 0, 0.0675, 0]];
 const DEFAULT_STAT_VALUE_MULTIPLIER = [0.01, 0.01, 0.01, 0.01, 0.01, 0.005];
-const DEFAULT_NPC_SCORE_VALUE = [[0.05, 0.05, 0.05],[0.05, 0.05, 0.05],[0.05, 0.05, 0.05],[0.03, 0.05, 0.05],[0, 0, 0.05]];
+const DEFAULT_NPC_SCORE_VALUE = [[0.05, 0.05, 0.05], [0.05, 0.05, 0.05], [0.05, 0.05, 0.05], [0.03, 0.05, 0.05], [0, 0, 0.05]];
 const DEFAULT_PAL_FRIENDSHIP_SCORES = [0.08, 0.057, 0.018];
 const DEFAULT_PAL_CARD_MULTIPLIER = 0.1;
 const DEFAULT_SUMMER_SCORE_THRESHOLD = 0.34;
-const ENERGY_FAST_MEDIC = 80, ENERGY_FAST_TRIP = 80, ENERGY_MEDIC_GENERAL = 85, ENERGY_TRIP_GENERAL = 90, ENERGY_REST_EXTRA_DAY = 65;
+const ENERGY_FAST_MEDIC = 60, ENERGY_FAST_TRIP = 60, ENERGY_MEDIC_GENERAL = 70, ENERGY_TRIP_GENERAL = 70, ENERGY_REST_EXTRA_DAY = 65;
 const MIN_SUPPORT_GOOD_TRAINING = 3, DEFAULT_REST_THRESHOLD = 48;
-const URA_RACE_WINDOWS = [[73, 75],[76, 78],[79, 99]];
+const URA_RACE_WINDOWS = [[73, 75], [76, 78], [79, 99]];
 const DEFAULT_MOTIVATION_THRESHOLD_YEAR1 = 3, DEFAULT_MOTIVATION_THRESHOLD_YEAR2 = 4, DEFAULT_MOTIVATION_THRESHOLD_YEAR3 = 4;
 const CARD_TYPE_SPEED = 0, CARD_TYPE_STAMINA = 1, CARD_TYPE_POWER = 2, CARD_TYPE_GUTS = 3, CARD_TYPE_WISDOM = 4, CARD_TYPE_FRIEND = 6, CARD_TYPE_GROUP = 6, CARD_TYPE_NPC = 10;
 const TRAINING_NAMES = ['Speed', 'Stamina', 'Power', 'Guts', 'Wisdom'];
@@ -72,8 +72,9 @@ class CareerState {
     add_friendship(idx, value) { if (0 <= idx && idx < 6) this.friendship[idx] = Math.min(100, this.friendship[idx] + value); }
     calculate_failure_rate(train_type, fail_rate_mult = 1.0) { const level = this.get_training_level(train_type); const x0 = 0.1 * FAIL_RATE_BASIC[train_type][level]; let f = 0.0; if (this.vital < x0) f = (100 - this.vital) * (x0 - this.vital) / 40.0; f += this.get_status_modifier('failure_mod'); return Math.max(0, Math.min(99, f * fail_rate_mult)); }
     get_period_index() { if (this.turn <= DATE_JUNIOR_END) return 0; else if (this.turn <= DATE_CLASSIC_END) return 1; else if (this.turn <= SUMMER_CAMP_2_START) return 2; else if (this.turn <= DATE_SENIOR_END) return 3; return 4; }
-    is_summer_camp() { return (SUMMER_CAMP_1_START < this.turn && this.turn <= SUMMER_CAMP_1_END) || (SUMMER_CAMP_2_START < this.turn && this.turn <= SUMMER_CAMP_2_END); }
+    is_summer_camp() { return SUMMER.has(this.turn); }
     is_terminal() { return this.turn >= TOTAL_TURN; }
+    add_max_vital(value) { this.maxVital = Math.max(1, this.maxVital + value); this.vital = Math.min(this.maxVital, this.vital); }
     copy() { const s = new CareerState(); s.turn = this.turn; s.vital = this.vital; s.maxVital = this.maxVital; s.motivation = this.motivation; s.fiveStatus = this.fiveStatus.slice(); s.fiveStatusLimit = this.fiveStatusLimit.slice(); s.stat_bonus_pct = this.stat_bonus_pct.slice(); s.skillPt = this.skillPt; s.skillScore = this.skillScore; s.trainLevelCount = this.trainLevelCount.slice(); s.friendship = this.friendship.slice(); s.uniqueEffectState = Object.assign({}, this.uniqueEffectState); s.medic_room_available = this.medic_room_available; s.medic_uses_remaining = this.medic_uses_remaining; s.last_medic_turn = this.last_medic_turn; s.debut_race_win = this.debut_race_win; s.ura_races_completed = this.ura_races_completed.slice(); s.status_effects = [...this.status_effects]; s.otonashi_bond = this.otonashi_bond; s.otonashi_appeared = this.otonashi_appeared; s.otonashi_facility = this.otonashi_facility; s.consecutive_races = this.consecutive_races; return s; }
 }
 class SupportCard {
@@ -217,13 +218,20 @@ class UniqueEffectCalculator {
         if (ue.full_bond) { const cardIdx = this.deck_cards.indexOf(card); if (cardIdx < 0 || state.friendship[cardIdx] < 100) return 0; }
         return ue.friendship_bonus;
     }
+    get_hint_frequency_bonus_for_card(state, card) {
+        if (!card.unique_effect_id) return 0;
+        const ue = this.unique_effects[card.unique_effect_id];
+        if (!ue || ue.hint_frequency <= 0) return 0;
+        if (ue.bond_threshold > 0) { const cardIdx = this.deck_cards.indexOf(card); if (cardIdx >= 0 && state.friendship[cardIdx] < ue.bond_threshold) return 0; }
+        return ue.hint_frequency;
+    }
     get_initial_friendship_gauge_bonus() { let total = 0; for (const ue of this.active_effects) total += ue.initial_friendship_gauge; return total; }
     get_race_bonus() { let total = 0; for (const ue of this.active_effects) total += ue.race_bonus; return total; }
     get_initial_stat_bonus() { const result = [0, 0, 0, 0, 0]; for (const ue of this.active_effects) { result[0] += ue.initial_speed; result[1] += ue.initial_stamina; result[2] += ue.initial_power; result[3] += ue.initial_guts; result[4] += ue.initial_wits; } return result; }
     check_zero_failure_chance() { for (const ue of this.active_effects) { if (ue.failure_rate_drop >= 20 && ue.text.includes('20% chance')) return Math.random() < 0.20; } return false; }
 }
 function distributeCards(state, deckCards, effectCalculator) {
-    const distribution = {0: [], 1: [], 2: [], 3: [], 4: []};
+    const distribution = { 0: [], 1: [], 2: [], 3: [], 4: [] };
     const MAX_SUPPORT_CARDS_PER_FACILITY = 4;
 
     for (let idx = 0; idx < deckCards.length; idx++) {
@@ -271,7 +279,32 @@ function distributeCards(state, deckCards, effectCalculator) {
 
         distribution[chosen].push(idx);
     }
-    return distribution;
+
+    const hintsByFacility = { 0: null, 1: null, 2: null, 3: null, 4: null };
+    const BASE_HINT_CHANCE = 7.5;
+
+    for (let f = 0; f < 5; f++) {
+        const cardsAt = distribution[f] || [];
+        const candidateCards = [];
+
+        for (const cardIdx of cardsAt) {
+            const card = deckCards[cardIdx];
+            const hintBonus = effectCalculator.get_hint_frequency_bonus_for_card(state, card);
+            const totalHintFreq = card.hint_frequency + hintBonus;
+            const finalChance = BASE_HINT_CHANCE * (1 + totalHintFreq / 100);
+
+            if (Math.random() * 100 < finalChance) {
+                candidateCards.push(cardIdx);
+            }
+        }
+
+        if (candidateCards.length > 0) {
+            const winnerIdx = candidateCards[Math.floor(Math.random() * candidateCards.length)];
+            hintsByFacility[f] = winnerIdx;
+        }
+    }
+
+    return { distribution, hintsByFacility };
 }
 function calculateTrainingValue(state, trainType, cardsAtTraining, deckCards, effectCalculator) {
     const level = state.get_training_level(trainType);
@@ -318,11 +351,18 @@ function calculateTrainingValue(state, trainType, cardsAtTraining, deckCards, ef
     for (let i = 0; i < 6; i++) { statGains.push(Math.max(0, Math.floor(base[i] * cardMultiplier))); }
     const vitalChange = base[6] < 0 ? Math.floor(base[6] * vitalCostMult) : base[6];
     const failureRate = state.calculate_failure_rate(trainType, failRateMult);
-    return {statGains, vitalChange, failureRate};
+    return { statGains, vitalChange, failureRate };
 }
 class TrainingScorer {
     constructor(deckCards, effectCalculator, statCaps) { this.deck_cards = deckCards; this.effect_calculator = effectCalculator; this.stat_caps = statCaps || [1200, 1200, 1200, 1200, 1200]; }
-    _getWeights(date) { if (date <= DATE_JUNIOR_END) return DEFAULT_SCORE_VALUE[0]; else if (date <= DATE_CLASSIC_END) return DEFAULT_SCORE_VALUE[1]; else if (date <= DATE_SPRING_END) return DEFAULT_SCORE_VALUE[2]; else if (date <= DATE_SENIOR_END) return DEFAULT_SCORE_VALUE[3]; return DEFAULT_SCORE_VALUE[4]; }
+    _getWeights(date) {
+        if (SUMMER.has(date)) return DEFAULT_SCORE_VALUE[1]; // Use Year 2 (high priority) weights for all summer camps
+        if (date <= DATE_JUNIOR_END) return DEFAULT_SCORE_VALUE[0];
+        else if (date <= DATE_CLASSIC_END) return DEFAULT_SCORE_VALUE[1];
+        else if (date <= DATE_SPRING_END) return DEFAULT_SCORE_VALUE[2];
+        else if (date <= DATE_SENIOR_END) return DEFAULT_SCORE_VALUE[3];
+        return DEFAULT_SCORE_VALUE[4];
+    }
     _getNpcScores(periodIdx, favor) { if (periodIdx >= DEFAULT_NPC_SCORE_VALUE.length) periodIdx = DEFAULT_NPC_SCORE_VALUE.length - 1; const npcArr = DEFAULT_NPC_SCORE_VALUE[periodIdx]; return favor === FAVOR_LEVEL_1 ? npcArr[0] : favor === FAVOR_LEVEL_2 ? npcArr[1] : npcArr[2]; }
     computeScores(state, distribution) {
         const date = state.turn, energy = state.vital, periodIdx = state.get_period_index();
@@ -336,8 +376,8 @@ class TrainingScorer {
         const trainingData = [null, null, null, null, null];
         for (let idx = 0; idx < 5; idx++) {
             const cardsAt = distribution[idx] || [];
-            const {statGains, vitalChange, failureRate} = calculateTrainingValue(state, idx, cardsAt, this.deck_cards, this.effect_calculator);
-            trainingData[idx] = {statGains, vitalChange, failureRate};
+            const { statGains, vitalChange, failureRate } = calculateTrainingValue(state, idx, cardsAt, this.deck_cards, this.effect_calculator);
+            trainingData[idx] = { statGains, vitalChange, failureRate };
             const targetType = idx; let score = baseScores[idx];
             let lv1c = 0, lv2c = 0, lv1Total = 0.0, lv2Total = 0.0, palCount = 0;
             for (const cardIdx of cardsAt) {
@@ -359,9 +399,17 @@ class TrainingScorer {
             let energyChangeContrib = vitalChange * 0.0056;
             if (energy >= 80 && vitalChange < 0) energyChangeContrib *= 0.9;
             score += energyChangeContrib;
-            let hintCount = 0;
-            for (const cardIdx of cardsAt) { const card = this.deck_cards[cardIdx]; if (card.hint_frequency > 0 && Math.random() * 100 < card.hint_frequency) hintCount++; }
-            if (hintCount > 0) score += w_hint;
+            let hintProb = 0;
+            const BASE_HINT_CHANCE = 7.5;
+            for (const cardIdx of cardsAt) {
+                const card = this.deck_cards[cardIdx];
+                const hintBonus = this.effect_calculator.get_hint_frequency_bonus_for_card(state, card);
+                const totalHintFreq = card.hint_frequency + hintBonus;
+                const cardHintChance = (BASE_HINT_CHANCE * (1 + totalHintFreq / 100)) / 100;
+                // Probability that at least one card has a hint: 1 - product(1 - p_i)
+                hintProb = 1 - (1 - hintProb) * (1 - cardHintChance);
+            }
+            if (hintProb > 0) score += w_hint * hintProb;
             let palMult = 1.0;
             if (palCount > 0) { palMult = 1.0 + DEFAULT_PAL_CARD_MULTIPLIER; score *= palMult; }
             let failMult = 1.0;
@@ -394,42 +442,59 @@ class TrainingScorer {
                 }
             }
         }
-        return {computedScores, trainingData};
+        return { computedScores, trainingData };
     }
     decideOperation(state, distribution) {
         const energy = state.vital, date = state.turn, medicAvailable = state.medic_room_available;
-        if (SUMMER.has(date)) return { operation: 'SUMMER_RECREATION', trainType: TRA_NONE };
+        const isSummer = SUMMER.has(date);
         let moodThreshold;
         if (date <= 36) moodThreshold = DEFAULT_MOTIVATION_THRESHOLD_YEAR1;
         else if (date <= 60) moodThreshold = DEFAULT_MOTIVATION_THRESHOLD_YEAR2;
         else moodThreshold = DEFAULT_MOTIVATION_THRESHOLD_YEAR3;
         const restThreshold = DEFAULT_REST_THRESHOLD;
-        if (medicAvailable && energy <= ENERGY_FAST_MEDIC && state.has_negative_condition()) return {operation: 'medic', trainType: TRA_NONE};
-        if (energy < ENERGY_FAST_TRIP && state.motivation < moodThreshold) return {operation: 'trip', trainType: TRA_NONE};
-        if (energy <= restThreshold) return {operation: 'rest', trainType: TRA_NONE};
-        const {computedScores} = this.computeScores(state, distribution);
+
+        if (energy < ENERGY_FAST_TRIP && state.motivation < moodThreshold) {
+            if (medicAvailable && state.has_negative_condition()) return { operation: 'medic', trainType: TRA_NONE };
+            return { operation: isSummer ? 'SUMMER_RECREATION' : 'trip', trainType: TRA_NONE };
+        }
+        if (energy <= restThreshold) {
+            if (medicAvailable && state.has_negative_condition()) return { operation: 'medic', trainType: TRA_NONE };
+            return { operation: isSummer ? 'SUMMER_RECREATION' : 'rest', trainType: TRA_NONE };
+        }
+
+        const { computedScores } = this.computeScores(state, distribution);
         let maxScore = Math.max(...computedScores);
         const supportCardMax = Math.max(...[0, 1, 2, 3, 4].map(i => (distribution[i] || []).length));
-        if (medicAvailable && energy <= ENERGY_MEDIC_GENERAL && state.has_negative_condition()) return {operation: 'medic', trainType: TRA_NONE};
+
+        if (medicAvailable && energy <= ENERGY_MEDIC_GENERAL && state.has_negative_condition()) return { operation: 'medic', trainType: TRA_NONE };
         if (!medicAvailable && state.motivation < moodThreshold && energy < ENERGY_TRIP_GENERAL) {
             if ((date <= 36 && !(supportCardMax >= MIN_SUPPORT_GOOD_TRAINING)) || (40 < date && date <= 60) || (64 < date)) {
-                if (maxScore <= 0.3) return {operation: 'trip', trainType: TRA_NONE};
+                if (maxScore <= 0.3) {
+                    if (medicAvailable && state.has_negative_condition()) return { operation: 'medic', trainType: TRA_NONE };
+                    return { operation: isSummer ? 'SUMMER_RECREATION' : 'trip', trainType: TRA_NONE };
+                }
             }
         }
-        if ((date === 36 || date === 60) && energy < ENERGY_REST_EXTRA_DAY) return {operation: 'rest', trainType: TRA_NONE};
+        if ((date === 35 || date === 59) && energy < ENERGY_REST_EXTRA_DAY) {
+            if (medicAvailable && state.has_negative_condition()) return { operation: 'medic', trainType: TRA_NONE };
+            return { operation: isSummer ? 'SUMMER_RECREATION' : 'rest', trainType: TRA_NONE };
+        }
         if (SUMMER_CONSERVE_DATES.includes(date)) {
             if (maxScore < DEFAULT_SUMMER_SCORE_THRESHOLD) {
-                if (energy < SUMMER_CONSERVE_ENERGY) return {operation: 'rest', trainType: TRA_NONE};
-                else return {operation: 'train', trainType: TRA_WISDOM};
+                if (energy < SUMMER_CONSERVE_ENERGY) {
+                    if (medicAvailable && state.has_negative_condition()) return { operation: 'medic', trainType: TRA_NONE };
+                    return { operation: isSummer ? 'SUMMER_RECREATION' : 'rest', trainType: TRA_NONE };
+                }
+                else return { operation: 'train', trainType: TRA_WISDOM };
             }
         }
         const eps = 1e-9; maxScore = Math.max(...computedScores);
         const ties = computedScores.map((s, i) => Math.abs(s - maxScore) < eps ? i : -1).filter(i => i >= 0);
         const chosen = ties.includes(TRA_WISDOM) ? TRA_WISDOM : Math.min(...ties);
-        return {operation: 'train', trainType: chosen};
+        return { operation: 'train', trainType: chosen };
     }
     applyTraining(state, trainType, cardsAtTraining) {
-        const {statGains, vitalChange, failureRate} = calculateTrainingValue(state, trainType, cardsAtTraining, this.deck_cards, this.effect_calculator);
+        const { statGains, vitalChange, failureRate } = calculateTrainingValue(state, trainType, cardsAtTraining, this.deck_cards, this.effect_calculator);
         if (this.effect_calculator.check_zero_failure_chance()) { }
         if (Math.random() * 100 < failureRate) {
             const path = PRACTICE_FAIL_EVENT.get_path(state);
@@ -444,7 +509,28 @@ class TrainingScorer {
         }
         for (let i = 0; i < 5; i++) state.add_status(i, statGains[i]);
         state.add_skill_pt(statGains[5]); state.add_vital(vitalChange);
-        for (const cardIdx of cardsAtTraining) { const card = this.deck_cards[cardIdx]; let bondGain = 4; if (card.card_type === trainType) bondGain += 3; state.add_friendship(cardIdx, bondGain); }
+        for (const cardIdx of cardsAtTraining) { let bondGain = 7; state.add_friendship(cardIdx, bondGain); }
+
+        if (state.hints_by_facility && state.hints_by_facility[trainType] !== null) {
+            const cardIdx = state.hints_by_facility[trainType];
+            state.add_friendship(cardIdx, 5);
+            const totalStats = 6 + Math.floor(Math.random() * 3);
+            const numStatsToDistribute = 2 + Math.floor(Math.random() * 2);
+            const possibleStats = [0, 1, 2, 3, 4];
+            for (let i = possibleStats.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [possibleStats[i], possibleStats[j]] = [possibleStats[j], possibleStats[i]];
+            }
+            const selectedStats = possibleStats.slice(0, numStatsToDistribute);
+            let remaining = totalStats;
+            for (let i = 0; i < selectedStats.length; i++) {
+                let gain = 0;
+                if (i === selectedStats.length - 1) { gain = remaining; }
+                else { gain = Math.floor(Math.random() * (remaining - (selectedStats.length - 1 - i))) + 1; remaining -= gain; }
+                state.add_status(selectedStats[i], gain);
+            }
+        }
+
         state.add_training_level(trainType, 1);
         return true;
     }
@@ -462,7 +548,7 @@ class SimulationEngine {
         this.raceTurns = {}; this.raceConfident = {};
         for (const r of this.raceSchedule) { this.raceTurns[r.turn] = r.grade || 'G23'; this.raceConfident[r.turn] = r.confident !== undefined ? r.confident : this.confident; }
         const extensionStart = this.maxTurns + 1;
-        this.mandatoryRaces = {13: 'OP'};
+        this.mandatoryRaces = { 13: 'OP' };
         this.mandatoryRaces[extensionStart + 1] = 'G0';
         this.mandatoryRaces[extensionStart + 3] = 'G0';
         this.mandatoryRaces[extensionStart + 5] = 'G0';
@@ -489,12 +575,43 @@ class SimulationEngine {
                     guts: stats['Guts'] || 0,
                     wisdom: stats['Wisdom'] || 0,
                     hp: stats['HP'] || 0,
+                    maxEnergy: stats['Max Energy'] || 0,
                     mood: stats['Mood'] || 0,
                     skillPts: stats['Skill Pts'] || 0,
                     friendship: stats['Friendship'] || 0
                 });
             }
             if (choices.length > 0) this.eventPool.push({ name, choices });
+        }
+    }
+    evaluateEventChoice(state, choice) {
+        let score = 0;
+        score += (choice.speed || 0) * 0.05;
+        score += (choice.stamina || 0) * 0.05;
+        score += (choice.power || 0) * 0.05;
+        score += (choice.guts || 0) * 0.05;
+        score += (choice.wisdom || 0) * 0.05;
+        score += (choice.skillPts || 0) * 0.02;
+        score += (choice.hp || 0) * 0.1;
+        score += (choice.maxEnergy || 0) * 0.5;
+        score += (choice.mood || 0) * 2.0;
+        score += (choice.friendship || 0) * 0.3;
+        return score;
+    }
+    applyEventChoice(state, choice) {
+        if (choice.speed) state.add_status(0, Math.round(choice.speed));
+        if (choice.stamina) state.add_status(1, Math.round(choice.stamina));
+        if (choice.power) state.add_status(2, Math.round(choice.power));
+        if (choice.guts) state.add_status(3, Math.round(choice.guts));
+        if (choice.wisdom) state.add_status(4, Math.round(choice.wisdom));
+        if (choice.hp) state.add_vital(Math.round(choice.hp));
+        if (choice.maxEnergy) state.add_max_vital(Math.round(choice.maxEnergy));
+        if (choice.mood) state.add_motivation(Math.round(choice.mood));
+        if (choice.skillPts) state.add_skill_pt(Math.round(choice.skillPts));
+        if (choice.friendship) {
+            for (let i = 0; i < this.deckCards.length; i++) {
+                state.add_friendship(i, Math.round(choice.friendship));
+            }
         }
     }
     _calcInitialFriendships() {
@@ -526,7 +643,7 @@ class SimulationEngine {
         const cardPressesByFacilityTimeline = [];
         const cumulativeCardAppearances = [Array(this.deckCards.length).fill(0), Array(this.deckCards.length).fill(0), Array(this.deckCards.length).fill(0), Array(this.deckCards.length).fill(0), Array(this.deckCards.length).fill(0)];
         const cumulativeCardAppearancesTimeline = [], facilityLevelsTimeline = [], trainingCountsTimeline = [], statHistory = [], spHistory = [];
-        const energyHistory = [], moodHistory = [], raceInfoTimeline = [], facilityGainsTimeline = [], potentialGainsTimeline = [], cardDistributionTimeline = [], friendshipHistory = [], statusEffectsTimeline = [], operationTimeline = [];
+        const energyHistory = [], moodHistory = [], raceInfoTimeline = [], facilityGainsTimeline = [], potentialGainsTimeline = [], cardDistributionTimeline = [], friendshipHistory = [], statusEffectsTimeline = [], operationTimeline = [], eventsTriggeredTimeline = [];
         const actualMaxTurns = this.maxTurns + 6;
         while (state.turn < actualMaxTurns) {
             statHistory.push([...state.fiveStatus]); spHistory.push(state.skillPt); facilityLevelsTimeline.push([...state.trainLevelCount]);
@@ -536,7 +653,8 @@ class SimulationEngine {
             if (state.has_status(SKIN_OUTBREAK) && Math.random() < SKIN_OUTBREAK_MOOD_CHANCE) state.add_motivation(-1);
             if (!state.otonashi_appeared && state.turn >= OTONASHI_APPEAR_DAY) { if (Math.random() < OTONASHI_APPEAR_CHANCE) { state.otonashi_appeared = true; state.otonashi_facility = Math.floor(Math.random() * 5); } }
             state.medic_room_available = this._rollMedicRoom(state);
-            const distribution = distributeCards(state, this.deckCards, this.effectCalculator);
+            const { distribution, hintsByFacility } = distributeCards(state, this.deckCards, this.effectCalculator);
+            state.hints_by_facility = hintsByFacility;
             for (let f = 0; f < 5; f++) { const cardsAt = distribution[f] || []; for (const ci of cardsAt) cumulativeCardAppearances[f][ci]++; }
             const potentialGains = [];
             for (let f = 0; f < 5; f++) {
@@ -547,7 +665,7 @@ class SimulationEngine {
             potentialGainsTimeline.push(potentialGains);
             cardDistributionTimeline.push(distribution);
             const mandatoryRaceGrade = this.mandatoryRaces[state.turn];
-            
+
             if (mandatoryRaceGrade) {
                 const grade = mandatoryRaceGrade;
                 const isConfident = true;
@@ -584,7 +702,7 @@ class SimulationEngine {
                 if (Math.random() < RACE_PUNISHMENT_SKIN[tableIdx][cIdx]) state.add_status_effect(SKIN_OUTBREAK);
                 if (Math.random() < RACE_PUNISHMENT_STATS[tableIdx][cIdx]) {
                     const stats = [0, 1, 2, 3, 4];
-                    for (let i = stats.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [stats[i], stats[j]] = [stats[j], stats[i]]; }
+                    for (let i = stats.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[stats[i], stats[j]] = [stats[j], stats[i]]; }
                     for (let i = 0; i < 3; i++) state.add_status(stats[i], -10);
                 }
                 raceInfoTimeline.push({ grade: mandatoryRaceGrade, placement: placement === RACE_PLACEMENT_VICTORY ? 'Victory' : placement === RACE_PLACEMENT_SOLID ? 'Solid' : 'Defeat', isTop, energyCost, statGain, spGain });
@@ -625,41 +743,48 @@ class SimulationEngine {
                 if (Math.random() < RACE_PUNISHMENT_SKIN[tableIdx][cIdx]) state.add_status_effect(SKIN_OUTBREAK);
                 if (Math.random() < RACE_PUNISHMENT_STATS[tableIdx][cIdx]) {
                     const stats = [0, 1, 2, 3, 4];
-                    for (let i = stats.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [stats[i], stats[j]] = [stats[j], stats[i]]; }
+                    for (let i = stats.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[stats[i], stats[j]] = [stats[j], stats[i]]; }
                     for (let i = 0; i < 3; i++) state.add_status(stats[i], -10);
                 }
                 raceInfoTimeline.push({ grade: grade, placement: placement === RACE_PLACEMENT_VICTORY ? 'Victory' : placement === RACE_PLACEMENT_SOLID ? 'Solid' : 'Defeat', isTop, energyCost, statGain, spGain });
                 turnOp = 'race_' + grade;
             } else {
-                const {operation, trainType} = scorer.decideOperation(state, distribution);
+                const { operation, trainType } = scorer.decideOperation(state, distribution);
                 turnOp = operation;
-                if (operation === 'medic') { state.add_vital(MEDIC_ENERGY_RECOVERY); state.medic_uses_remaining -= 1; state.last_medic_turn = state.turn; medicCounts++; if (state.has_negative_condition() && Math.random() < MEDIC_CURE_CHANCE) state.remove_random_negative(); }
-                else if (operation === 'trip') { state.add_vital(30); state.add_motivation(1); tripCounts++; }
-                else if (operation === 'rest') { state.add_vital(50); restCounts++; }
+                if (operation === 'medic') {
+                    state.add_vital(MEDIC_ENERGY_RECOVERY); state.medic_uses_remaining -= 1; state.last_medic_turn = state.turn; medicCounts++;
+                    if (state.has_negative_condition() && Math.random() < MEDIC_CURE_CHANCE) state.remove_random_negative();
+                    state.consecutive_races = 0;
+                }
+                else if (operation === 'trip') { state.add_vital(30); state.add_motivation(1); tripCounts++; state.consecutive_races = 0; }
+                else if (operation === 'rest') { state.add_vital(50); restCounts++; state.consecutive_races = 0; }
                 else if (operation === 'SUMMER_RECREATION') {
                     state.add_vital(40);
                     state.add_motivation(1);
                     if (Math.random() < 0.5 && state.has_negative_condition()) state.remove_random_negative();
                     summerCounts++;
+                    state.consecutive_races = 0;
                 }
                 else if (operation === 'train') {
-                    const cardsAt = distribution[trainType] || []; trainingCounts[trainType]++;
-                    for (const ci of cardsAt) cardPressesByFacility[trainType][ci]++;
-                    const potential = calculateTrainingValue(state, trainType, cardsAt, this.deckCards, this.effectCalculator);
+                    state.consecutive_races = 0;
+                    const tIdx = parseInt(trainType);
+                    const cardsAt = distribution[tIdx] || []; trainingCounts[tIdx]++;
+                    for (const ci of cardsAt) cardPressesByFacility[tIdx][ci]++;
+                    const potential = calculateTrainingValue(state, tIdx, cardsAt, this.deckCards, this.effectCalculator);
                     const beforeStats = [...state.fiveStatus];
                     const beforeSP = state.skillPt;
-                    const success = scorer.applyTraining(state, trainType, cardsAt);
+                    const success = scorer.applyTraining(state, tIdx, cardsAt);
                     const actualStatGains = [];
                     for (let i = 0; i < 5; i++) actualStatGains.push(state.fiveStatus[i] - beforeStats[i]);
                     const actualSPGain = state.skillPt - beforeSP;
                     const actualGainsArray = [...actualStatGains, actualSPGain];
-                    turnFacilityGains[trainType] = {
+                    turnFacilityGains[tIdx] = {
                         statGains: actualGainsArray,
                         vitalChange: potential.vitalChange,
                         succeeded: success,
                         failureRate: potential.failureRate
                     };
-                    facilityLevels[trainType] = state.get_facility_level(trainType); facilityPresses[trainType]++;
+                    facilityLevels[tIdx] = state.get_facility_level(tIdx); facilityPresses[tIdx]++;
                 }
                 cardPressesByFacilityTimeline.push(cardPressesByFacility.map(f => [...f]));
             }
@@ -669,16 +794,20 @@ class SimulationEngine {
             statusEffectsTimeline.push([...state.status_effects]);
             if (state.turn < 72 && this.eventPool.length > 0 && Math.random() < 0.50) {
                 const evt = this.eventPool[Math.floor(Math.random() * this.eventPool.length)];
-                const choice = evt.choices[Math.floor(Math.random() * evt.choices.length)];
-                if (choice.speed) state.add_status(0, Math.round(choice.speed));
-                if (choice.stamina) state.add_status(1, Math.round(choice.stamina));
-                if (choice.power) state.add_status(2, Math.round(choice.power));
-                if (choice.guts) state.add_status(3, Math.round(choice.guts));
-                if (choice.wisdom) state.add_status(4, Math.round(choice.wisdom));
-                if (choice.hp) state.add_vital(Math.round(choice.hp));
-                if (choice.mood) state.add_motivation(Math.round(choice.mood));
-                if (choice.skillPts) state.add_skill_pt(Math.round(choice.skillPts));
+                let bestChoice = evt.choices[0];
+                let bestScore = -Infinity;
+                for (const choice of evt.choices) {
+                    const score = this.evaluateEventChoice(state, choice);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestChoice = choice;
+                    }
+                }
+                this.applyEventChoice(state, bestChoice);
                 eventsTriggered++;
+                eventsTriggeredTimeline.push(evt.name);
+            } else {
+                eventsTriggeredTimeline.push(null);
             }
 
             trainingCountsTimeline.push([...trainingCounts]); operationCountsTimeline.push([restCounts, medicCounts, tripCounts, raceCounts, summerCounts]);
@@ -691,7 +820,7 @@ class SimulationEngine {
         for (let i = 0; i < 5; i++) state.add_status(i, 45); state.add_skill_pt(20);
         if (state.otonashi_bond >= 80) for (let i = 0; i < 5; i++) state.add_status(i, 3);
         if (state.otonashi_bond >= 100) for (let i = 0; i < 5; i++) state.add_status(i, 2);
-        return { finalStats: [...state.fiveStatus], skillPoints: state.skillPt, turnsCompleted: state.turn, trainingCounts, restCounts, medicCounts, tripCounts, raceCounts, summerCounts, totalFailures, eventsTriggered, statHistory, spHistory, energyHistory, moodHistory, facilityPresses, facilityLevels, facilityLevelsTimeline, trainingCountsTimeline, operationCountsTimeline, cardPressesByFacility, cardPressesByFacilityTimeline, cumulativeCardAppearancesTimeline, raceInfoTimeline, facilityGainsTimeline, potentialGainsTimeline, cardDistributionTimeline, friendshipHistory, statusEffectsTimeline, operationTimeline };
+        return { finalStats: [...state.fiveStatus], skillPoints: state.skillPt, turnsCompleted: state.turn, trainingCounts, restCounts, medicCounts, tripCounts, raceCounts, summerCounts, totalFailures, eventsTriggered, statHistory, spHistory, energyHistory, moodHistory, facilityPresses, facilityLevels, facilityLevelsTimeline, trainingCountsTimeline, operationCountsTimeline, cardPressesByFacility, cardPressesByFacilityTimeline, cumulativeCardAppearancesTimeline, raceInfoTimeline, facilityGainsTimeline, potentialGainsTimeline, cardDistributionTimeline, friendshipHistory, statusEffectsTimeline, operationTimeline, eventsTriggeredTimeline };
     }
     runSimulationsChunk(offset, count) {
         const results = [];
@@ -709,7 +838,7 @@ if (typeof self !== 'undefined') {
     let workerCardId = null;
     let workerCardLb = null;
 
-    self.onmessage = function(e) {
+    self.onmessage = function (e) {
         const { type, data } = e.data;
         if (type === 'init') {
             workerEngine = new SimulationEngine(data.deckData, data.cardsData, data.uniqueEffectsData, data.options);
